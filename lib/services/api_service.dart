@@ -2,9 +2,18 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:8000';  // API rodando na porta 8000
+  static const String baseUrl = 'http://localhost:8000';
 
-  // Função para cadastrar o usuário
+  // Login
+  static Future<http.Response> login(String email, String senha) {
+    return http.post(
+      Uri.parse('$baseUrl/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'senha': senha}),
+    );
+  }
+
+  // Cadastrar usuário
   static Future<bool> cadastrarUsuario({
     required String nome,
     required String email,
@@ -23,20 +32,17 @@ class ApiService {
         'data_nasc': dataNasc,
       }),
     );
-
-    // Verificar se a resposta foi bem-sucedida (status 201)
     return response.statusCode == 201;
   }
 
-  // Função para listar os usuários
+  // Listar usuários
   static Future<List<Map<String, dynamic>>> listarUsuarios({
     String? nome,
     String? email,
   }) async {
-    final uri = Uri.parse('$baseUrl/usuarios')
-        .replace(queryParameters: {
-      'nome': nome,
-      'email': email,
+    final uri = Uri.parse('$baseUrl/usuarios').replace(queryParameters: {
+      if (nome != null) 'nome': nome,
+      if (email != null) 'email': email,
     });
 
     final response = await http.get(uri);
@@ -47,5 +53,29 @@ class ApiService {
     } else {
       throw Exception('Falha ao carregar usuários');
     }
+  }
+
+  // Solicitar código de recuperação
+  static Future<bool> solicitarCodigoRecuperacao(String email) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/usuarios/recuperar'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+    return response.statusCode == 200;
+  }
+
+  // Alterar senha
+  static Future<bool> alterarSenha(String email, String codigo, String novaSenha) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/usuarios/senha'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'codigo_recuperacao': codigo,
+        'nova_senha': novaSenha,
+      }),
+    );
+    return response.statusCode == 200;
   }
 }
