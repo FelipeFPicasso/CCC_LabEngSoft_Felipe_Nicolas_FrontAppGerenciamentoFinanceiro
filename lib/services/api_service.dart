@@ -95,29 +95,7 @@ class ApiService {
       throw Exception('Erro ao buscar saldo');
     }
   }
-  static Future<Map<String, dynamic>> criarCartao(
-      String token, String limite, String vencFatura) async {
-    final url = Uri.parse('$baseUrl/cartao');
 
-    final response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': '$token',  // <-- token enviado aqui
-      },
-      body: jsonEncode({
-        'limite': limite,
-        'venc_fatura': vencFatura,
-      }),
-    );
-
-    if (response.statusCode == 401) {
-      print('Token inválido ou expirado!');
-      // Pode tratar logout, pedir novo login, etc.
-    }
-
-    return jsonDecode(response.body);
-  }
   static Future<List<Map<String, dynamic>>> listarContasUsuario(String token, String userId) async {
     final url = Uri.parse('$baseUrl/conta/usuario/$userId');
 
@@ -136,6 +114,7 @@ class ApiService {
       throw Exception('Erro ao carregar contas do usuário');
     }
   }
+
   static Future<double> obterSaldoAtualConta(String token, int fkIdConta) async {
     final response = await http.get(
       Uri.parse('$baseUrl/saldo_atual/$fkIdConta'),
@@ -158,7 +137,7 @@ class ApiService {
       Uri.parse('$baseUrl/conta'),
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
+        'Authorization': '$token',
       },
       body: jsonEncode(conta),
     );
@@ -166,4 +145,65 @@ class ApiService {
     return response.statusCode == 201;
   }
 
+  static Future<List<Map<String, dynamic>>> getCartoesPorUsuario(String token, int usuarioId) async {
+    final url = Uri.parse('$baseUrl/cartoes/usuario/$usuarioId');
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Authorization': '$token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonList = jsonDecode(response.body);
+      return jsonList.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception('Erro ao buscar cartões: ${response.statusCode} ${response.body}');
+    }
+  }
+
+  static Future<http.Response> postJson({
+    required Uri url,
+    required String token,
+    required Map<String, dynamic> body,
+  }) {
+    return http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': '$token',
+      },
+      body: jsonEncode(body),
+    );
+  }
+
+  // Aqui o método para adicionar cartão (usado na tela AdicionarCartaoPage)
+  static Future<void> adicionarCartao({
+    required String token,
+    required double limite,
+    required String vencFatura,
+    required int idConta,
+  }) async {
+    final url = Uri.parse('$baseUrl/cartoes');
+    final body = {
+      'limite': limite,
+      'vencimento_fatura': vencFatura,
+      'fk_id_conta': idConta,
+    };
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+      },
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('Erro ao adicionar cartão: ${response.statusCode} ${response.body}');
+    }
+  }
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import '../services/api_service.dart';
 import '../services/auth_services.dart'; // Import necessário para salvar o token
 
@@ -31,11 +32,11 @@ class _LoginPageState extends State<LoginPage> {
 
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
+      final token = json['token'];
 
-      final token = json['token']; // extrai o token do JSON
       if (token != null) {
-        await AuthService.salvarToken(token); // salva o token
-        Navigator.pushReplacementNamed(context, '/home'); // vai para a tela de menu
+        await AuthService.salvarToken(token);
+        Navigator.pushReplacementNamed(context, '/home');
       } else {
         setState(() {
           _erro = 'Token não encontrado na resposta.';

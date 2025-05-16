@@ -151,7 +151,13 @@ class _ContasPageState extends State<ContasPage> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: Text('Minhas Contas', style: TextStyle(fontWeight: FontWeight.w700)),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context); // Voltar ao menu
+          },
+        ),
+        title: Text('Minhas Contas', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
         backgroundColor: primaryColor,
         elevation: 2,
         shadowColor: shadowColor,
