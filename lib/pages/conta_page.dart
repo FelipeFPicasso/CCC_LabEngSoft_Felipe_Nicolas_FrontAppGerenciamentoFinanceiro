@@ -14,6 +14,10 @@ class _ContasPageState extends State<ContasPage> {
   bool carregando = true;
   String? erro;
 
+  final _nomeBancoController = TextEditingController();
+  final _saldoInicialController = TextEditingController();
+  final _idCartaoController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -55,7 +59,82 @@ class _ContasPageState extends State<ContasPage> {
     }
   }
 
-  static const Color primaryColor = Color(0xFF1B263B); // Azul escuro sóbrio
+  Future<void> adicionarConta() async {
+    final token = await AuthService.obterToken();
+    if (token == null) return;
+
+    final nomeBanco = _nomeBancoController.text.trim();
+    final saldoInicial = _saldoInicialController.text.trim();
+    final fkIdCartao = _idCartaoController.text.trim();
+
+    if (nomeBanco.isEmpty || saldoInicial.isEmpty || fkIdCartao.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Todos os campos são obrigatórios')),
+      );
+      return;
+    }
+
+    final novaConta = {
+      "nome_banco": nomeBanco,
+      "saldo_inicial": double.tryParse(saldoInicial),
+      "fk_id_cartao": int.tryParse(fkIdCartao),
+    };
+
+    final sucesso = await ApiService.criarConta(token, novaConta);
+
+    if (sucesso) {
+      Navigator.of(context).pop(); // Fechar o dialog
+      _nomeBancoController.clear();
+      _saldoInicialController.clear();
+      _idCartaoController.clear();
+      carregarContas();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao criar conta')),
+      );
+    }
+  }
+
+  void mostrarDialogAdicionarConta() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Adicionar Conta'),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextField(
+                controller: _nomeBancoController,
+                decoration: InputDecoration(labelText: 'Nome do Banco'),
+              ),
+              TextField(
+                controller: _saldoInicialController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(labelText: 'Saldo Inicial'),
+              ),
+              TextField(
+                controller: _idCartaoController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(labelText: 'ID do Cartão'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: Text('Cancelar'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          ElevatedButton(
+            child: Text('Adicionar'),
+            onPressed: adicionarConta,
+          ),
+        ],
+      ),
+    );
+  }
+
+  static const Color primaryColor = Color(0xFF1B263B);
   static const Color backgroundColor = Color(0xFFF5F7FA);
   static const Color cardColor = Colors.white;
   static const Color shadowColor = Color(0x22000000);
@@ -65,13 +144,6 @@ class _ContasPageState extends State<ContasPage> {
     fontWeight: FontWeight.w700,
     color: primaryColor,
     letterSpacing: 0.3,
-  );
-
-  TextStyle saldoStyle = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
-    color: Colors.grey[700],
-    letterSpacing: 0.2,
   );
 
   @override
@@ -100,10 +172,6 @@ class _ContasPageState extends State<ContasPage> {
           separatorBuilder: (_, __) => SizedBox(height: 16),
           itemBuilder: (context, index) {
             final conta = contas[index];
-            final saldo = conta['saldo_inicial'];
-            final saldoFormatado = saldo != null
-                ? double.parse(saldo.toString()).toStringAsFixed(2)
-                : '0.00';
 
             return Material(
               elevation: 4,
@@ -137,8 +205,6 @@ class _ContasPageState extends State<ContasPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(conta['nome_banco'] ?? 'Sem nome', style: tituloContaStyle),
-                            SizedBox(height: 6),
-                            Text('Saldo inicial: R\$ $saldoFormatado', style: saldoStyle),
                           ],
                         ),
                       ),
@@ -150,6 +216,12 @@ class _ContasPageState extends State<ContasPage> {
             );
           },
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: primaryColor,
+        icon: Icon(Icons.add),
+        label: Text('Adicionar'),
+        onPressed: mostrarDialogAdicionarConta,
       ),
     );
   }

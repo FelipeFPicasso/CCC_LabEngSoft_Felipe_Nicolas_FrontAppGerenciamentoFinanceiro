@@ -153,4 +153,17 @@ class ApiService {
     }
   }
 
+  static Future<bool> criarConta(String token, Map<String, dynamic> conta) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/conta'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(conta),
+    );
+
+    return response.statusCode == 201;
+  }
+
 }
