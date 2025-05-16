@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../services/api_service.dart'; // ajuste o import conforme seu projeto
+import '../services/api_service.dart';
+import '../services/auth_services.dart'; // Import necessário para salvar o token
 
 class LoginPage extends StatefulWidget {
   @override
@@ -18,15 +20,27 @@ class _LoginPageState extends State<LoginPage> {
       _erro = null;
     });
 
-    final response = await ApiService.login(_emailController.text, _senhaController.text);
+    final response = await ApiService.login(
+      _emailController.text,
+      _senhaController.text,
+    );
 
     setState(() {
       _loading = false;
     });
 
     if (response.statusCode == 200) {
-      // Sucesso no login, por exemplo, navegar para home
-      Navigator.pushReplacementNamed(context, '/home');
+      final json = jsonDecode(response.body);
+
+      final token = json['token']; // extrai o token do JSON
+      if (token != null) {
+        await AuthService.salvarToken(token); // salva o token
+        Navigator.pushReplacementNamed(context, '/home'); // vai para a tela de menu
+      } else {
+        setState(() {
+          _erro = 'Token não encontrado na resposta.';
+        });
+      }
     } else {
       setState(() {
         _erro = 'Login falhou: ${response.body}';
@@ -86,11 +100,19 @@ class _LoginPageState extends State<LoginPage> {
                     onPressed: _loading ? null : _fazerLogin,
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      backgroundColor: Colors.blue[700],
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                      shadowColor: Colors.black12,
+                      textStyle: TextStyle(fontSize: 18),
+                      elevation: 2,
+                    ).copyWith(
+                      overlayColor: MaterialStateProperty.resolveWith<Color?>(
+                            (states) => states.contains(MaterialState.hovered) ? Colors.grey[300] : null,
+                      ),
                     ),
                     child: _loading
-                        ? CircularProgressIndicator(color: Colors.white)
-                        : Text("Entrar", style: TextStyle(fontSize: 18)),
+                        ? CircularProgressIndicator(color: Colors.black)
+                        : Text("Entrar"),
                   ),
                 ),
                 SizedBox(height: 16),
