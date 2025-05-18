@@ -52,14 +52,14 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Colors.black87,
       body: Center(
         child: SingleChildScrollView(
           child: Container(
             width: 400,
             padding: EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.white12,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 16, offset: Offset(0, 8))],
             ),
@@ -67,23 +67,53 @@ class _LoginPageState extends State<LoginPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text("Bem-vindo de volta!",
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue[700])),
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue[600])),
                 SizedBox(height: 24),
                 TextField(
+                  style: TextStyle(color: Colors.white70),
+                  cursorWidth: 1,
+                  cursorHeight: 17,
+                  cursorColor: Colors.white,
                   controller: _emailController,
                   decoration: InputDecoration(
                       labelText: 'Email',
-                      prefixIcon: Icon(Icons.email),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                      labelStyle: TextStyle(color: Colors.white70),
+                      prefixIcon: Icon(Icons.email, color: Colors.white70),
+                      border: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white70),
+                          borderRadius: BorderRadius.circular(8)
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                        color: Colors.white, // cor da borda ao focar
+                  ),
+                ),
+                  ),
                   keyboardType: TextInputType.emailAddress,
                 ),
                 SizedBox(height: 16),
                 TextField(
+                  style: TextStyle(color: Colors.white70),
+                  cursorWidth: 1,
+                  cursorHeight: 17,
+                  cursorColor: Colors.white,
                   controller: _senhaController,
                   decoration: InputDecoration(
                       labelText: 'Senha',
-                      prefixIcon: Icon(Icons.lock),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                      labelStyle: TextStyle(color: Colors.white70),
+                      prefixIcon: Icon(Icons.lock, color: Colors.white70),
+                      border: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white70),
+                          borderRadius: BorderRadius.circular(8)
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Colors.white, // cor da borda ao focar
+                        ),
+                      ),
+                  ),
                   obscureText: true,
                 ),
                 if (_erro != null) ...[
@@ -100,20 +130,34 @@ class _LoginPageState extends State<LoginPage> {
                   child: ElevatedButton(
                     onPressed: _loading ? null : _fazerLogin,
                     style: ElevatedButton.styleFrom(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                      shadowColor: Colors.black12,
-                      textStyle: TextStyle(fontSize: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      backgroundColor: Colors.blue[600],
+                      foregroundColor: Colors.white,
+                      shadowColor: Colors.black,
+                      textStyle: const TextStyle(fontSize: 18),
                       elevation: 2,
                     ).copyWith(
                       overlayColor: MaterialStateProperty.resolveWith<Color?>(
-                            (states) => states.contains(MaterialState.hovered) ? Colors.grey[300] : null,
+                            (states) {
+                          if (states.contains(MaterialState.pressed)) {
+                            return Colors.blue[800]; // cor ao pressionar
+                          } else if (states.contains(MaterialState.hovered)) {
+                            return Colors.blue[700];
+                          }
+                          return null;
+                        },
                       ),
                     ),
                     child: _loading
-                        ? CircularProgressIndicator(color: Colors.black)
-                        : Text("Entrar"),
+                        ? const CircularProgressIndicator(color: Colors.black)
+                        : const Text(
+                      "Entrar",
+                      style: TextStyle(
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
                 SizedBox(height: 16),
@@ -121,12 +165,20 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.blue[500],
+                        overlayColor: Colors.black,
+                      ),
                       onPressed: () => Navigator.pushNamed(context, '/cadastro'),
-                      child: Text("Criar conta"),
+                      child: Text("Criar conta", style: TextStyle(color: Colors.blue[500]),),
                     ),
                     TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.blue[500],
+                        overlayColor: Colors.black,
+                      ),
                       onPressed: () => Navigator.pushNamed(context, '/recuperar-senha'),
-                      child: Text("Recuperar senha"),
+                      child: Text("Recuperar senha", style: TextStyle(color: Colors.blue[500]),),
                     ),
                   ],
                 ),
