@@ -97,7 +97,7 @@ class ApiService {
   }
 
   static Future<List<Map<String, dynamic>>> listarContasUsuario(String token, String userId) async {
-    final url = Uri.parse('$baseUrl/conta/usuario/$userId');
+    final url = Uri.parse('$baseUrl/contas/usuario');
 
     final response = await http.get(
       url,

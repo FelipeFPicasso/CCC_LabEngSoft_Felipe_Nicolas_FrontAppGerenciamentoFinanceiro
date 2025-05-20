@@ -16,7 +16,6 @@ class _ContasPageState extends State<ContasPage> {
 
   final _nomeBancoController = TextEditingController();
   final _saldoInicialController = TextEditingController();
-  final _idCartaoController = TextEditingController();
 
   @override
   void initState() {
@@ -53,7 +52,7 @@ class _ContasPageState extends State<ContasPage> {
       });
     } catch (e) {
       setState(() {
-        erro = 'Erro ao carregar contas.';
+        erro = 'Nenhuma conta adicionada.';
         carregando = false;
       });
     }
@@ -65,9 +64,8 @@ class _ContasPageState extends State<ContasPage> {
 
     final nomeBanco = _nomeBancoController.text.trim();
     final saldoInicial = _saldoInicialController.text.trim();
-    final fkIdCartao = _idCartaoController.text.trim();
 
-    if (nomeBanco.isEmpty || saldoInicial.isEmpty || fkIdCartao.isEmpty) {
+    if (nomeBanco.isEmpty || saldoInicial.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Todos os campos são obrigatórios')),
       );
@@ -76,8 +74,7 @@ class _ContasPageState extends State<ContasPage> {
 
     final novaConta = {
       "nome_banco": nomeBanco,
-      "saldo_inicial": double.tryParse(saldoInicial),
-      "fk_id_cartao": int.tryParse(fkIdCartao),
+      "saldo_inicial": double.tryParse(saldoInicial)
     };
 
     final sucesso = await ApiService.criarConta(token, novaConta);
@@ -86,7 +83,6 @@ class _ContasPageState extends State<ContasPage> {
       Navigator.of(context).pop(); // Fechar o dialog
       _nomeBancoController.clear();
       _saldoInicialController.clear();
-      _idCartaoController.clear();
       carregarContas();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -111,11 +107,6 @@ class _ContasPageState extends State<ContasPage> {
                 controller: _saldoInicialController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(labelText: 'Saldo Inicial'),
-              ),
-              TextField(
-                controller: _idCartaoController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'ID do Cartão'),
               ),
             ],
           ),
@@ -154,10 +145,13 @@ class _ContasPageState extends State<ContasPage> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            Navigator.pop(context); // Voltar ao menu
+            Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
           },
         ),
-        title: Text('Minhas Contas', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
+        title: Text(
+          'Minhas Contas',
+          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
+        ),
         backgroundColor: primaryColor,
         elevation: 2,
         shadowColor: shadowColor,
