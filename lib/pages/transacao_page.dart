@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:untitled/pages/adicionar_transacao_page.dart';
-import '../services/auth_services.dart';
 import 'package:http/http.dart' as http;
+import '../services/auth_services.dart';
+import 'adicionar_transacao_page.dart';
+import 'relatorio_transacao_page.dart';
 
 class TransacaoPage extends StatefulWidget {
   static const String baseUrl = 'http://localhost:8000';
+
   @override
   _TransacaoPageState createState() => _TransacaoPageState();
 }
@@ -13,6 +15,8 @@ class TransacaoPage extends StatefulWidget {
 class _TransacaoPageState extends State<TransacaoPage> {
   bool _loading = true;
   List<dynamic> _transacoes = [];
+  List<dynamic> _transacoesFiltradas = [];
+  String _filtro = '';
   String? _erro;
 
   @override
@@ -38,7 +42,7 @@ class _TransacaoPageState extends State<TransacaoPage> {
       }
 
       final response = await http.get(
-        Uri.parse('http://localhost:8000/transacao/usuario'),
+        Uri.parse('${TransacaoPage.baseUrl}/relatorio-transacao/usuario'),
         headers: {
           'Authorization': '$token',
           'Content-Type': 'application/json',
@@ -48,17 +52,8 @@ class _TransacaoPageState extends State<TransacaoPage> {
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
         setState(() {
-          _transacoes = jsonResponse['transacoes'];
-          _loading = false;
-        });
-      } else if (response.statusCode == 404) {
-        setState(() {
-          _transacoes = [];
-          _loading = false;
-        });
-      } else if (response.statusCode == 401) {
-        setState(() {
-          _erro = 'Sessão expirada. Faça login novamente.';
+          _transacoes = jsonResponse['relatorios'];
+          _transacoesFiltradas = _transacoes;
           _loading = false;
         });
       } else {
@@ -75,31 +70,51 @@ class _TransacaoPageState extends State<TransacaoPage> {
     }
   }
 
+  void _filtrarTransacoes(String filtro) {
+    setState(() {
+      _filtro = filtro.toLowerCase();
+      _transacoesFiltradas = _transacoes.where((transacao) {
+        final nomeBanco = (transacao['nome_conta'] ?? '').toString().toLowerCase();
+        return nomeBanco.contains(_filtro);
+      }).toList();
+    });
+  }
+
   Widget _buildLista() {
-    if (_transacoes.isEmpty) {
+    if (_transacoesFiltradas.isEmpty) {
       return Center(
-          child: Text(
-            'Nenhuma transação encontrada.',
-            style: TextStyle(color: Colors.white70),
-          ));
+        child: Text('Nenhuma transação encontrada.', style: TextStyle(color: Colors.white70)),
+      );
     }
+
     return ListView.separated(
-      itemCount: _transacoes.length,
+      itemCount: _transacoesFiltradas.length,
       separatorBuilder: (_, __) => Divider(color: Colors.grey[700]),
       itemBuilder: (context, index) {
-        final transacao = _transacoes[index];
+        final transacao = _transacoesFiltradas[index];
         return ListTile(
-          title: Text(
-            transacao['descricao'] ?? 'Sem descrição',
-            style: TextStyle(color: Colors.white),
+          title: Text(transacao['descricao'] ?? 'Sem descrição', style: TextStyle(color: Colors.white)),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Valor: R\$ ${transacao['valor'].toString()}', style: TextStyle(color: Colors.white70)),
+              Text('Banco: ${transacao['nome_conta'] ?? 'Desconhecido'}', style: TextStyle(color: Colors.white60)),
+              Text('Tipo: ${transacao['tipo_transacao']}', style: TextStyle(color: Colors.white60)),
+            ],
           ),
-          subtitle: Text(
-            'Valor: R\$ ${transacao['valor'].toString()}',
-            style: TextStyle(color: Colors.white70),
-          ),
-          trailing: Text(
-            transacao['data'] ?? '',
-            style: TextStyle(color: Colors.white54),
+          trailing: ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ComprovantePage(
+                    idTransacao: transacao['fk_id_transacao'],
+                  ),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+            child: Text("Comprovante"),
           ),
         );
       },
@@ -109,24 +124,34 @@ class _TransacaoPageState extends State<TransacaoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // fundo preto
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.grey[900], // cinza escuro
-        title: Text(
-          'Transações',
-          style: TextStyle(color: Colors.white),
+        backgroundColor: Colors.grey[900],
+        title: Text('Transações', style: TextStyle(color: Colors.white)),
+        iconTheme: IconThemeData(color: Colors.white),
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(50.0),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: TextField(
+              onChanged: _filtrarTransacoes,
+              style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Pesquisar por nome do banco',
+                hintStyle: TextStyle(color: Colors.white54),
+                border: InputBorder.none,
+                icon: Icon(Icons.search, color: Colors.white),
+              ),
+            ),
+          ),
         ),
-        iconTheme: IconThemeData(color: Colors.white), // ícones brancos
       ),
       body: _loading
           ? Center(child: CircularProgressIndicator(color: Colors.blueAccent))
           : _erro != null
           ? Center(
-          child: Text(
-            _erro!,
-            style: TextStyle(color: Colors.redAccent),
-            textAlign: TextAlign.center,
-          ))
+        child: Text(_erro!, style: TextStyle(color: Colors.redAccent), textAlign: TextAlign.center),
+      )
           : _buildLista(),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blueAccent,
