@@ -33,7 +33,7 @@ class DateInputFormatter extends TextInputFormatter {
 }
 
 class CadastroPage extends StatefulWidget {
-  const CadastroPage({Key? key}) : super(key: key);
+  const CadastroPage({super.key});
 
   @override
   _CadastroPageState createState() => _CadastroPageState();
@@ -72,8 +72,7 @@ class _CadastroPageState extends State<CadastroPage> {
             primary: Colors.blue,
             onPrimary: Colors.white,
             onSurface: Colors.blue,
-          ),
-          dialogBackgroundColor: Colors.white,
+          ), dialogTheme: DialogThemeData(backgroundColor: Colors.white),
         ),
         child: child!,
       ),

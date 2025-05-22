@@ -5,6 +5,8 @@ import 'package:untitled/services/auth_services.dart';
 import 'dart:convert';
 
 class AdicionarTransacaoPage extends StatefulWidget {
+  const AdicionarTransacaoPage({super.key});
+
   @override
   _AdicionarTransacaoPageState createState() => _AdicionarTransacaoPageState();
 }
@@ -252,8 +254,7 @@ class _AdicionarTransacaoPageState extends State<AdicionarTransacaoPage> {
                                 onPrimary: Colors.white,
                                 surface: Colors.grey[900]!,
                                 onSurface: Colors.white70,
-                              ),
-                              dialogBackgroundColor: Colors.grey[850],
+                              ), dialogTheme: DialogThemeData(backgroundColor: Colors.grey[850]),
                             ),
                             child: child!,
                           );

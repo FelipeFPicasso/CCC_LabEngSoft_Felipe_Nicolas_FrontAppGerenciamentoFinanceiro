@@ -6,7 +6,7 @@ import '../services/auth_services.dart';
 class ComprovantePage extends StatefulWidget {
   final int idTransacao;
 
-  const ComprovantePage({required this.idTransacao});
+  const ComprovantePage({super.key, required this.idTransacao});
 
   @override
   _ComprovantePageState createState() => _ComprovantePageState();

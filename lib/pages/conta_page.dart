@@ -5,6 +5,8 @@ import '../services/auth_services.dart';
 import 'detalhes_conta_page.dart';
 
 class ContasPage extends StatefulWidget {
+  const ContasPage({super.key});
+
   @override
   _ContasPageState createState() => _ContasPageState();
 }
@@ -117,16 +119,16 @@ class _ContasPageState extends State<ContasPage> {
             onPressed: () => Navigator.of(context).pop(),
           ),
           ElevatedButton(
-            child: Text('Adicionar'),
             onPressed: adicionarConta,
+            child: Text('Adicionar'),
           ),
         ],
       ),
     );
   }
 
-  static const Color primaryColor = Color(0xFF1B263B);
-  static const Color backgroundColor = Color(0xFFF5F7FA);
+  static const Color primaryColor = Color.fromARGB(255,46,46,46);
+  static const Color backgroundColor = Colors.black87;
   static const Color cardColor = Colors.white;
   static const Color shadowColor = Color(0x22000000);
 

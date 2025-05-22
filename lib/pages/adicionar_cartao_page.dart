@@ -6,10 +6,10 @@ class AdicionarCartaoPage extends StatefulWidget {
   final int usuarioId;
 
   const AdicionarCartaoPage({
-    Key? key,
+    super.key,
     required this.token,
     required this.usuarioId,
-  }) : super(key: key);
+  });
 
   @override
   State<AdicionarCartaoPage> createState() => _AdicionarCartaoPageState();

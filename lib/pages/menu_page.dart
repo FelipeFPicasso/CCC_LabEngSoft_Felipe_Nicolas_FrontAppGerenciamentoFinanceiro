@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class MenuPage extends StatefulWidget {
-  const MenuPage({Key? key}) : super(key: key);
+  const MenuPage({super.key});
 
   @override
   _MenuPageState createState() => _MenuPageState();
@@ -33,7 +33,7 @@ class _MenuPageState extends State<MenuPage> {
       final response = await http.get(
         Uri.parse('http://localhost:8000/saldo_total/usuarios'),
         headers: {
-          'Authorization': '$token',  // corrigido aqui
+          'Authorization': token,  // corrigido aqui
           'Content-Type': 'application/json',
         },
       );
@@ -104,18 +104,22 @@ class _MenuPageState extends State<MenuPage> {
     );
   }
 
+  static const Color primaryColor = Color.fromARGB(255,46,46,46);
+  static const Color backgroundColor = Colors.black87;
+  static Color? cardColor = Colors.blue[600];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black87,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
         title: const Text('Menu Principal'),
-        backgroundColor: Colors.white12,
+        //backgroundColor: primaryColor,
         elevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(color: Colors.blue[600], size: 30),
+        iconTheme: IconThemeData(color: cardColor, size: 30),
         titleTextStyle: TextStyle(
-          color: Colors.blue[600],
+          color: cardColor,
           fontSize: 22,
           fontWeight: FontWeight.bold,
         ),
@@ -138,7 +142,7 @@ class _MenuPageState extends State<MenuPage> {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue[300],
+                color: Colors.blue[400],
               ),
               textAlign: TextAlign.center,
             ),

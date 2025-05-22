@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart'; // sua API service
 
 class RecuperarSenhaPage extends StatefulWidget {
+  const RecuperarSenhaPage({super.key});
+
   @override
   _RecuperarSenhaPageState createState() => _RecuperarSenhaPageState();
 }

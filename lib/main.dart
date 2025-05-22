@@ -10,9 +10,27 @@ import 'pages/conta_page.dart';
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme(
+          brightness: Brightness.dark,
+          primary: Colors.white,        // Cor de destaque
+          onPrimary: Colors.white,      // Texto sobre o botão primário
+          secondary: Colors.grey,       // Cor secundária
+          onSecondary: Colors.white,    // Texto sobre o botão secundário
+          error: Colors.red,
+          onError: Colors.red,
+          background: Colors.black,  // Scaffold background
+          onBackground: Colors.white,
+          surface: Color.fromARGB(255,61,61,61),        // Cor do AlertDialog, Card, etc.
+          onSurface: Colors.white,      // Texto em cima do `surface`
+        ),
+      ),
       title: 'Gerenc Finanças',
       initialRoute: '/login',
       routes: {

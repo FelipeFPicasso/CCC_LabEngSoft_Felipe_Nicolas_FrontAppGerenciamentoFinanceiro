@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:jwt_decoder/jwt_decoder.dart';
 import '../services/api_service.dart';
 import '../services/auth_services.dart'; // Import necessário para salvar o token
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
   _LoginPageState createState() => _LoginPageState();
 }
@@ -139,11 +140,11 @@ class _LoginPageState extends State<LoginPage> {
                       textStyle: const TextStyle(fontSize: 18),
                       elevation: 2,
                     ).copyWith(
-                      overlayColor: MaterialStateProperty.resolveWith<Color?>(
+                      overlayColor: WidgetStateProperty.resolveWith<Color?>(
                             (states) {
-                          if (states.contains(MaterialState.pressed)) {
+                          if (states.contains(WidgetState.pressed)) {
                             return Colors.blue[800]; // cor ao pressionar
-                          } else if (states.contains(MaterialState.hovered)) {
+                          } else if (states.contains(WidgetState.hovered)) {
                             return Colors.blue[700];
                           }
                           return null;
