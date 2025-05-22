@@ -83,7 +83,7 @@ class ApiService {
     final response = await http.get(
       Uri.parse('$baseUrl/saldo-atual'),
       headers: {
-        'Authorization': '$token',
+        'Authorization': token,
         'Content-Type': 'application/json',
       },
     );
@@ -102,7 +102,7 @@ class ApiService {
     final response = await http.get(
       url,
       headers: {
-        'Authorization': '$token',
+        'Authorization': token,
         'Content-Type': 'application/json',
       },
     );
@@ -119,7 +119,7 @@ class ApiService {
     final response = await http.get(
       Uri.parse('$baseUrl/saldo_atual/$fkIdConta'),
       headers: {
-        'Authorization': '$token',
+        'Authorization': token,
         'Content-Type': 'application/json',
       },
     );
@@ -137,7 +137,7 @@ class ApiService {
       Uri.parse('$baseUrl/conta'),
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': '$token',
+        'Authorization': token,
       },
       body: jsonEncode(conta),
     );
@@ -151,7 +151,7 @@ class ApiService {
     final response = await http.get(
       url,
       headers: {
-        'Authorization': '$token',
+        'Authorization': token,
         'Content-Type': 'application/json',
       },
     );
@@ -173,7 +173,7 @@ class ApiService {
       url,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': '$token',
+        'Authorization': token,
       },
       body: jsonEncode(body),
     );

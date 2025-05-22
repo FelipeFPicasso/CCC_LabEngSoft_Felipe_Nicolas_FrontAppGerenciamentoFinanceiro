@@ -66,18 +66,17 @@ class _CadastroPageState extends State<CadastroPage> {
       initialDate: initialDate,
       firstDate: DateTime(1900),
       lastDate: initialDate,
-      builder: (context, child) =>
-          Theme(
-            data: ThemeData.light().copyWith(
-              colorScheme: const ColorScheme.light(
-                primary: Colors.blue,
-                onPrimary: Colors.white,
-                onSurface: Colors.blue,
-              ),
-              dialogBackgroundColor: Colors.white,
-            ),
-            child: child!,
+      builder: (context, child) => Theme(
+        data: ThemeData.light().copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: Colors.blue,
+            onPrimary: Colors.white,
+            onSurface: Colors.blue,
           ),
+          dialogBackgroundColor: Colors.white,
+        ),
+        child: child!,
+      ),
     );
 
     if (picked != null) {
@@ -101,9 +100,7 @@ class _CadastroPageState extends State<CadastroPage> {
     );
 
     final snackBar = SnackBar(
-      content: Text(sucesso
-          ? 'Cadastro realizado com sucesso'
-          : 'Erro ao cadastrar usuário'),
+      content: Text(sucesso ? 'Cadastro realizado com sucesso' : 'Erro ao cadastrar usuário'),
       backgroundColor: sucesso ? Colors.green : Colors.red,
     );
 
@@ -132,11 +129,11 @@ class _CadastroPageState extends State<CadastroPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black87,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Cadastro', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('Cadastro'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -145,61 +142,69 @@ class _CadastroPageState extends State<CadastroPage> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                _buildTextField('Nome', onChanged: (v) => nome = v),
+                TextFormField(
+                  decoration: _inputDecoration('Nome'),
+                  onChanged: (value) => nome = value,
+                  validator: (value) =>
+                  (value == null || value.isEmpty) ? 'Nome é obrigatório' : null,
+                ),
                 const SizedBox(height: 12),
-                _buildTextField('Email', onChanged: (v) => email = v,
-                    keyboard: TextInputType.emailAddress),
+                TextFormField(
+                  decoration: _inputDecoration('Email'),
+                  keyboardType: TextInputType.emailAddress,
+                  onChanged: (value) => email = value,
+                  validator: (value) =>
+                  (value == null || value.isEmpty) ? 'Email é obrigatório' : null,
+                ),
                 const SizedBox(height: 12),
-                _buildTextField(
-                    'Senha', obscure: true, onChanged: (v) => senha = v),
+                TextFormField(
+                  decoration: _inputDecoration('Senha'),
+                  obscureText: true,
+                  onChanged: (value) => senha = value,
+                  validator: (value) =>
+                  (value == null || value.isEmpty) ? 'Senha é obrigatória' : null,
+                ),
                 const SizedBox(height: 12),
-                _buildTextField('CPF', onChanged: (v) => cpf = v,
-                    keyboard: TextInputType.number),
+                TextFormField(
+                  decoration: _inputDecoration('CPF'),
+                  keyboardType: TextInputType.number,
+                  onChanged: (value) => cpf = value,
+                  validator: (value) =>
+                  (value == null || value.isEmpty) ? 'CPF é obrigatório' : null,
+                ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _dataController,
-                  style: const TextStyle(color: Colors.white70),
-                  decoration: _darkInputDecoration(
-                      'Data Nasc. (DD/MM/AAAA)', icon: Icons.calendar_today),
+                  decoration: _inputDecoration('Data Nasc. (DD/MM/AAAA)'),
                   keyboardType: TextInputType.number,
                   inputFormatters: [DateInputFormatter()],
-                  readOnly: true,
-                  onTap: _selecionarData,
-                  validator: (value) =>
-                  value == null || value.isEmpty
-                      ? 'Data de nascimento é obrigatória'
-                      : null,
+                  onChanged: (value) => dataNasc = value,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Data é obrigatória';
+                    final regex = RegExp(r'^\d{2}/\d{2}/\d{4}$');
+                    if (!regex.hasMatch(value)) return 'Formato deve ser DD/MM/AAAA';
+                    return null;
+                  },
+                  onTap: () async {
+                    FocusScope.of(context).requestFocus(FocusNode());
+                    await _selecionarData();
+                  },
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
                     onPressed: () {
-                      if (_formKey.currentState!.validate()) {
+                      if (_formKey.currentState?.validate() ?? false) {
                         _cadastrar();
                       }
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[600],
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      textStyle: const TextStyle(fontSize: 18),
-                      elevation: 2,
-                    ).copyWith(
-                      overlayColor: MaterialStateProperty.resolveWith<Color?>(
-                            (states) {
-                          if (states.contains(MaterialState.pressed)) {
-                            return Colors.blue[800];
-                          } else if (states.contains(MaterialState.hovered)) {
-                            return Colors.blue[700];
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    child: const Text("Cadastrar"),
+                    child: const Text('Cadastrar', style: TextStyle(fontSize: 18)),
                   ),
                 ),
               ],
@@ -207,42 +212,6 @@ class _CadastroPageState extends State<CadastroPage> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildTextField(String label, {
-    bool obscure = false,
-    TextInputType keyboard = TextInputType.text,
-    required Function(String) onChanged,
-  }) {
-    return TextFormField(
-      style: const TextStyle(color: Colors.white70),
-      obscureText: obscure,
-      keyboardType: keyboard,
-      decoration: _darkInputDecoration(label),
-      onChanged: onChanged,
-      validator: (value) =>
-      (value == null || value.isEmpty)
-          ? '$label é obrigatório'
-          : null,
-    );
-  }
-
-  InputDecoration _darkInputDecoration(String label, {IconData? icon}) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: Colors.white70),
-      prefixIcon: icon != null ? Icon(icon, color: Colors.white70) : null,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Colors.white),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Colors.white70),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
     );
   }
 }

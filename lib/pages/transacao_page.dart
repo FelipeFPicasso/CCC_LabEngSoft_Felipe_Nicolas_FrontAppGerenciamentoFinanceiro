@@ -9,6 +9,8 @@ import 'relatorio_transacao_page.dart'; // Aqui só se precisar de algo mais
 class TransacaoPage extends StatefulWidget {
   static const String baseUrl = 'http://localhost:8000';
 
+  const TransacaoPage({super.key});
+
   @override
   _TransacaoPageState createState() => _TransacaoPageState();
 }
@@ -45,7 +47,7 @@ class _TransacaoPageState extends State<TransacaoPage> {
       final response = await http.get(
         Uri.parse('${TransacaoPage.baseUrl}/relatorio-transacao/usuario'),
         headers: {
-          'Authorization': '$token',
+          'Authorization': token,
           'Content-Type': 'application/json',
         },
       );

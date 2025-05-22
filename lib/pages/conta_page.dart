@@ -80,10 +80,10 @@ class _ContasPageState extends State<ContasPage> {
     final sucesso = await ApiService.criarConta(token, novaConta);
 
     if (sucesso) {
-      Navigator.of(context).pop(); // Fecha o dialog
+      Navigator.of(context).pop(); // Fechar o dialog
       _nomeBancoController.clear();
       _saldoInicialController.clear();
-      await carregarContas(); // Atualiza a tela
+      carregarContas();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro ao criar conta')),
@@ -95,54 +95,28 @@ class _ContasPageState extends State<ContasPage> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: Colors.white12,
-        title: Text('Adicionar Conta', style: TextStyle(color: Colors.white)),
+        title: Text('Adicionar Conta'),
         content: SingleChildScrollView(
           child: Column(
             children: [
               TextField(
                 controller: _nomeBancoController,
-                style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: 'Nome do Banco',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white70),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.blueAccent),
-                  ),
-                ),
+                decoration: InputDecoration(labelText: 'Nome do Banco'),
               ),
-              SizedBox(height: 12),
               TextField(
                 controller: _saldoInicialController,
                 keyboardType: TextInputType.number,
-                style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: 'Saldo Inicial',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white70),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.blueAccent),
-                  ),
-                ),
+                decoration: InputDecoration(labelText: 'Saldo Inicial'),
               ),
             ],
           ),
         ),
         actions: [
           TextButton(
-            child: Text('Cancelar', style: TextStyle(color: Colors.white70)),
+            child: Text('Cancelar'),
             onPressed: () => Navigator.of(context).pop(),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blueAccent,
-              foregroundColor: Colors.black,
-            ),
             child: Text('Adicionar'),
             onPressed: adicionarConta,
           ),
@@ -151,45 +125,46 @@ class _ContasPageState extends State<ContasPage> {
     );
   }
 
-  static const Color backgroundColor = Color(0xFF0D1B2A);
-  static const Color cardColor = Colors.black87;
-  static const Color textColor = Colors.white;
-  static const Color shadowColor = Colors.black45;
+  static const Color primaryColor = Color(0xFF1B263B);
+  static const Color backgroundColor = Color(0xFFF5F7FA);
+  static const Color cardColor = Colors.white;
+  static const Color shadowColor = Color(0x22000000);
 
   TextStyle tituloContaStyle = TextStyle(
     fontSize: 20,
     fontWeight: FontWeight.w700,
-    color: Colors.white,
+    color: primaryColor,
     letterSpacing: 0.3,
   );
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black87,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        //backgroundColor: cardColor,
-        backgroundColor: Colors.black12,
-        elevation: 0,
-        //shadowColor: shadowColor,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
           },
         ),
-        title: Text('Minhas Contas',
-            style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
+        title: Text(
+          'Minhas Contas',
+          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
+        ),
+        backgroundColor: primaryColor,
+        elevation: 2,
+        shadowColor: shadowColor,
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: carregando
-            ? Center(child: CircularProgressIndicator(color: Colors.blueAccent))
+            ? Center(child: CircularProgressIndicator(color: primaryColor))
             : erro != null
             ? Center(
           child: Text(
             erro!,
-            style: TextStyle(color: Colors.red.shade300, fontSize: 16),
+            style: TextStyle(color: Colors.red.shade700, fontSize: 16),
           ),
         )
             : ListView.separated(
@@ -199,7 +174,6 @@ class _ContasPageState extends State<ContasPage> {
             final conta = contas[index];
 
             return Material(
-              color: cardColor,
               elevation: 4,
               shadowColor: shadowColor,
               borderRadius: BorderRadius.circular(12),
@@ -219,26 +193,22 @@ class _ContasPageState extends State<ContasPage> {
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                   decoration: BoxDecoration(
+                    color: cardColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.account_balance,
-                          size: 40, color: Colors.blueAccent),
+                      Icon(Icons.account_balance, size: 40, color: primaryColor),
                       SizedBox(width: 20),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              conta['nome_banco'] ?? 'Sem nome',
-                              style: tituloContaStyle,
-                            ),
+                            Text(conta['nome_banco'] ?? 'Sem nome', style: tituloContaStyle),
                           ],
                         ),
                       ),
-                      Icon(Icons.arrow_forward_ios,
-                          color: Colors.white24, size: 18),
+                      Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400, size: 18),
                     ],
                   ),
                 ),
@@ -248,8 +218,7 @@ class _ContasPageState extends State<ContasPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: Colors.blueAccent,
-        foregroundColor: Colors.black,
+        backgroundColor: primaryColor,
         icon: Icon(Icons.add),
         label: Text('Adicionar'),
         onPressed: mostrarDialogAdicionarConta,

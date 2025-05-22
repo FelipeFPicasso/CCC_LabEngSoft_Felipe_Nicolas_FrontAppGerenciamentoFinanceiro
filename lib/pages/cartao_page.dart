@@ -8,7 +8,7 @@ import '../services/auth_services.dart';
 import 'adicionar_cartao_page.dart';
 
 class CartaoPage extends StatefulWidget {
-  const CartaoPage({Key? key}) : super(key: key);
+  const CartaoPage({super.key});
 
   @override
   State<CartaoPage> createState() => _CartaoPageState();

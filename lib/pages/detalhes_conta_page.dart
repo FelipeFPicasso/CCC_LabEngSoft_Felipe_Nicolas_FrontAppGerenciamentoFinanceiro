@@ -6,7 +6,7 @@ class ContaDetalhesPage extends StatefulWidget {
   final int contaId;
   final String nomeBanco;
 
-  const ContaDetalhesPage({Key? key, required this.contaId, required this.nomeBanco}) : super(key: key);
+  const ContaDetalhesPage({super.key, required this.contaId, required this.nomeBanco});
 
   @override
   _ContaDetalhesPageState createState() => _ContaDetalhesPageState();
