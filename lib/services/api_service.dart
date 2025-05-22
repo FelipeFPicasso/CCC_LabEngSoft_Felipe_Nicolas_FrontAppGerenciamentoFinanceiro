@@ -189,7 +189,7 @@ class ApiService {
     final url = Uri.parse('$baseUrl/cartoes');
     final body = {
       'limite': limite,
-      'vencimento_fatura': vencFatura,
+      'venc_fatura': vencFatura,  // aqui o nome correto que seu backend espera
       'fk_id_conta': idConta,
     };
 

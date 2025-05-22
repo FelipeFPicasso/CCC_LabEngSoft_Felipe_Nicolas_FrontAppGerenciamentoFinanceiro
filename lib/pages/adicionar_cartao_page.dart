@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
-class AdicionarCartaoPage extends StatefulWidget {
+class AdicionarCartaoDialog extends StatefulWidget {
   final String token;
   final int usuarioId;
 
-  const AdicionarCartaoPage({
+  const AdicionarCartaoDialog({
     Key? key,
     required this.token,
     required this.usuarioId,
   }) : super(key: key);
 
   @override
-  State<AdicionarCartaoPage> createState() => _AdicionarCartaoPageState();
+  State<AdicionarCartaoDialog> createState() => _AdicionarCartaoDialogState();
 }
 
-class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
+class _AdicionarCartaoDialogState extends State<AdicionarCartaoDialog> {
   final _formKey = GlobalKey<FormState>();
   final _limiteController = TextEditingController();
   final _vencFaturaController = TextEditingController();
@@ -24,6 +24,12 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
   int? _contaSelecionada;
 
   bool _isLoading = false;
+
+  final Color _backgroundColor = const Color(0xFF121212);
+  final Color _cardColor = const Color(0xFF1E1E1E);
+  final Color _textColor = Colors.white70;
+  final Color _labelColor = Colors.white60;
+  final Color _buttonColor = Colors.deepPurpleAccent;
 
   @override
   void initState() {
@@ -47,6 +53,12 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
     }
   }
 
+  String _converterDataParaBackend(String dataBr) {
+    final partes = dataBr.split('/');
+    if (partes.length != 3) return dataBr;
+    return '${partes[2]}-${partes[1].padLeft(2, '0')}-${partes[0].padLeft(2, '0')}';
+  }
+
   Future<void> _adicionarCartao() async {
     if (!_formKey.currentState!.validate() || _contaSelecionada == null) return;
 
@@ -63,7 +75,6 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
       return;
     }
 
-    // Validação simples para formato dd/mm/yyyy
     final regexData = RegExp(r'^\d{2}/\d{2}/\d{4}$');
     if (!regexData.hasMatch(vencFatura)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -73,11 +84,13 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
       return;
     }
 
+    final vencFaturaBackend = _converterDataParaBackend(vencFatura);
+
     try {
       await ApiService.adicionarCartao(
         token: widget.token,
         limite: limite,
-        vencFatura: vencFatura,
+        vencFatura: vencFaturaBackend,
         idConta: _contaSelecionada!,
       );
 
@@ -95,76 +108,139 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
     }
   }
 
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(color: _labelColor),
+      filled: true,
+      fillColor: _cardColor,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      focusedBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: _buttonColor, width: 2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.redAccent, width: 2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.grey.shade700),
+        borderRadius: BorderRadius.circular(8),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _limiteController.dispose();
+    _vencFaturaController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Adicionar Cartão'),
-      ),
-      body: Padding(
+    return Dialog(
+      backgroundColor: _backgroundColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
         padding: const EdgeInsets.all(16),
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              DropdownButtonFormField<int>(
-                decoration: const InputDecoration(labelText: 'Conta'),
-                items: _contas.map((conta) {
-                  return DropdownMenuItem<int>(
-                    value: conta['id'],
-                    child: Text(conta['nome_conta'] ?? 'Conta sem nome'),
-                  );
-                }).toList(),
-                value: _contaSelecionada,
-                onChanged: (int? novoValor) {
-                  setState(() {
-                    _contaSelecionada = novoValor;
-                  });
-                },
-                validator: (value) => value == null ? 'Selecione uma conta' : null,
+        child: SizedBox(
+          width: 350,
+          child: _isLoading
+              ? const SizedBox(
+            height: 200,
+            child: Center(child: CircularProgressIndicator()),
+          )
+              : Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Adicionar Cartão',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: _textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<int>(
+                    decoration: _inputDecoration('Conta'),
+                    dropdownColor: _cardColor,
+                    style: TextStyle(color: _textColor),
+                    items: _contas.map((conta) {
+                      return DropdownMenuItem<int>(
+                        value: conta['id'],
+                        child: Text(
+                          conta['nome_conta'] ?? 'Conta sem nome',
+                          style: TextStyle(color: _textColor),
+                        ),
+                      );
+                    }).toList(),
+                    value: _contaSelecionada,
+                    onChanged: (int? novoValor) {
+                      setState(() {
+                        _contaSelecionada = novoValor;
+                      });
+                    },
+                    validator: (value) =>
+                    value == null ? 'Selecione uma conta' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _limiteController,
+                    keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                    style: TextStyle(color: _textColor),
+                    decoration: _inputDecoration('Limite'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Informe o limite';
+                      }
+                      if (double.tryParse(value.replaceAll(',', '.')) ==
+                          null) {
+                        return 'Limite inválido';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _vencFaturaController,
+                    keyboardType: TextInputType.datetime,
+                    style: TextStyle(color: _textColor),
+                    decoration: _inputDecoration('Vencimento da Fatura (DD/MM/AAAA)'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Informe o vencimento';
+                      }
+                      if (!RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(value)) {
+                        return 'Formato inválido';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _buttonColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        textStyle: const TextStyle(fontSize: 16),
+                      ),
+                      onPressed: _adicionarCartao,
+                      child: const Text('Salvar'),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _limiteController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Limite'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Informe o limite';
-                  }
-                  if (double.tryParse(value.replaceAll(',', '.')) == null) {
-                    return 'Limite inválido';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _vencFaturaController,
-                keyboardType: TextInputType.datetime,
-                decoration: const InputDecoration(labelText: 'Vencimento da Fatura (DD/MM/AAAA)'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Informe o vencimento';
-                  }
-                  if (!RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(value)) {
-                    return 'Formato inválido';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _adicionarCartao,
-                  child: const Text('Salvar'),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

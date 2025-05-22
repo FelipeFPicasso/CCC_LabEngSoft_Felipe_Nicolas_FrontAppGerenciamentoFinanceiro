@@ -117,8 +117,8 @@ class _AdicionarTransacaoPageState extends State<AdicionarTransacaoPage> {
     }
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<bool> _submit() async {
+    if (!_formKey.currentState!.validate()) return false;
 
     try {
       final token = await AuthService.obterToken();
@@ -146,18 +146,21 @@ class _AdicionarTransacaoPageState extends State<AdicionarTransacaoPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Transação criada com sucesso!')),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true);  // Retorna true indicando sucesso
+        return true;
       } else {
         final body = jsonDecode(response.body);
         final errorMsg = body['erro'] ?? 'Erro desconhecido';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erro: $errorMsg')),
         );
+        return false;
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro de rede ou servidor: $e')),
       );
+      return false;
     }
   }
 
@@ -240,8 +243,7 @@ class _AdicionarTransacaoPageState extends State<AdicionarTransacaoPage> {
                       DateTime? picked = await showDatePicker(
                         context: context,
                         initialDate:
-                        DateTime.tryParse(_dataController.text) ??
-                            DateTime.now(),
+                        DateTime.tryParse(_dataController.text) ?? DateTime.now(),
                         firstDate: DateTime(2000),
                         lastDate: DateTime(2100),
                         builder: (context, child) {
@@ -261,7 +263,7 @@ class _AdicionarTransacaoPageState extends State<AdicionarTransacaoPage> {
                       );
                       if (picked != null) {
                         _dataController.text =
-                            DateFormat('yyyy-MM-dd').format(picked);
+                            DateFormat('dd/mm/yyyy').format(picked);
                       }
                     },
                   ),
@@ -315,7 +317,8 @@ class _AdicionarTransacaoPageState extends State<AdicionarTransacaoPage> {
                 ))
                     .toList(),
                 onChanged: (val) => setState(() => _selectedTipoId = val),
-                validator: (value) => value == null ? 'Selecione um tipo' : null,
+                validator: (value) =>
+                value == null ? 'Selecione um tipo' : null,
               ),
               SizedBox(height: 24),
               ElevatedButton(

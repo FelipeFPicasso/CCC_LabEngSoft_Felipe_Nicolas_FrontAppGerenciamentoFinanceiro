@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../services/auth_services.dart';
 import 'adicionar_transacao_page.dart';
-import 'relatorio_transacao_page.dart';
+// Importa o ComprovanteDialog que criamos
+import 'relatorio_transacao_page.dart'; // Aqui só se precisar de algo mais
 
 class TransacaoPage extends StatefulWidget {
   static const String baseUrl = 'http://localhost:8000';
@@ -104,13 +105,9 @@ class _TransacaoPageState extends State<TransacaoPage> {
           ),
           trailing: ElevatedButton(
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ComprovantePage(
-                    idTransacao: transacao['fk_id_transacao'],
-                  ),
-                ),
+              showDialog(
+                context: context,
+                builder: (_) => ComprovanteDialog(idTransacao: transacao['fk_id_transacao']),
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),

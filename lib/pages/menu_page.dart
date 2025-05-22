@@ -65,7 +65,7 @@ class _MenuPageState extends State<MenuPage> {
   }
 
   String formatarSaldo(double valor) {
-    final formatador = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+    final formatador = NumberFormat.currency(locale: 'pt_BR', symbol: ' R\$');
     return formatador.format(valor);
   }
 

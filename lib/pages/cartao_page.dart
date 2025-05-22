@@ -1,5 +1,8 @@
+// cartao_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../services/auth_services.dart';
 import 'adicionar_cartao_page.dart';
@@ -16,15 +19,18 @@ class _CartaoPageState extends State<CartaoPage> {
   bool carregando = true;
   String? erro;
 
+  // Paleta escura para manter consistência visual com o restante do app
   static const Color primaryColor = Color(0xFF1B263B);
-  static const Color backgroundColor = Color(0xFFF5F7FA);
-  static const Color cardColor = Colors.white;
-  static const Color shadowColor = Color(0x22000000);
+  static const Color backgroundColor = Color(0xFF0D1B2A);
+  static const Color cardColor = Color(0xFF415A77);
+  static const Color textColor = Color(0xFFE0E1DD);
+  static const Color accentColor = Color(0xFF778DA9);
+  static const Color shadowColor = Color(0x44000000);
 
   TextStyle tituloCartaoStyle = const TextStyle(
     fontSize: 18,
     fontWeight: FontWeight.w700,
-    color: primaryColor,
+    color: textColor,
     letterSpacing: 0.3,
   );
 
@@ -43,15 +49,7 @@ class _CartaoPageState extends State<CartaoPage> {
     try {
       final token = await AuthService.obterToken();
 
-      if (token == null) {
-        setState(() {
-          erro = 'Usuário não autenticado. Faça login novamente.';
-          carregando = false;
-        });
-        return;
-      }
-
-      if (JwtDecoder.isExpired(token)) {
+      if (token == null || JwtDecoder.isExpired(token)) {
         setState(() {
           erro = 'Sessão expirada. Faça login novamente.';
           carregando = false;
@@ -106,7 +104,7 @@ class _CartaoPageState extends State<CartaoPage> {
 
     final resultado = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => AdicionarCartaoPage(
+        builder: (_) => AdicionarCartaoDialog(
           token: token,
           usuarioId: int.parse(userId),
         ),
@@ -118,84 +116,111 @@ class _CartaoPageState extends State<CartaoPage> {
     }
   }
 
+  String formatarData(dynamic data) {
+    try {
+      DateTime dateTime;
+      if (data is String) {
+        dateTime = DateTime.parse(data);
+      } else if (data is DateTime) {
+        dateTime = data;
+      } else {
+        return data.toString();
+      }
+
+      return DateFormat('dd/MM/yyyy').format(dateTime);
+    } catch (e) {
+      return data.toString();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+        backgroundColor: primaryColor,
+        shadowColor: shadowColor,
+        elevation: 3,
         title: const Text(
           'Meus Cartões',
-          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
         ),
-        backgroundColor: primaryColor,
-        elevation: 2,
-        shadowColor: shadowColor,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: carregarCartoes,
           ),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: carregando
-            ? const Center(child: CircularProgressIndicator(color: primaryColor))
+            ? const Center(child: CircularProgressIndicator(color: accentColor))
             : erro != null
             ? Center(
           child: Text(
             erro!,
-            style: TextStyle(color: Colors.red.shade700, fontSize: 16),
+            style: const TextStyle(color: Colors.redAccent, fontSize: 16),
           ),
         )
             : cartoes.isEmpty
-            ? const Center(child: Text('Nenhum cartão encontrado.'))
+            ? const Center(
+          child: Text(
+            'Nenhum cartão encontrado.',
+            style: TextStyle(color: textColor),
+          ),
+        )
             : ListView.separated(
           itemCount: cartoes.length,
           separatorBuilder: (_, __) => const SizedBox(height: 16),
           itemBuilder: (context, index) {
             final cartao = cartoes[index];
             final limite = cartao['limite']?.toString() ?? 'Limite não informado';
-            final vencFatura = cartao['venc_fatura'] ?? 'Vencimento não informado';
+            final vencFatura = cartao['venc_fatura'] != null
+                ? formatarData(cartao['venc_fatura'])
+                : 'Vencimento não informado';
             final nomeConta = cartao['nome_conta'] ?? 'Conta não informada';
 
             return Material(
-              elevation: 4,
+              color: Colors.transparent,
+              elevation: 5,
               shadowColor: shadowColor,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               child: InkWell(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 onTap: () {
-                  // Aqui pode abrir detalhes do cartão
+                  // Ação ao tocar no cartão (ex: detalhes)
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                   decoration: BoxDecoration(
                     color: cardColor,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
+                  padding: const EdgeInsets.all(18),
                   child: Row(
                     children: [
-                      const Icon(Icons.credit_card, size: 40, color: primaryColor),
-                      const SizedBox(width: 20),
+                      const Icon(Icons.credit_card, size: 40, color: accentColor),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Limite: $limite', style: tituloCartaoStyle),
                             const SizedBox(height: 4),
-                            Text('Vencimento da fatura: $vencFatura'),
-                            Text('Conta: $nomeConta'),
+                            Text('Vencimento: $vencFatura', style: TextStyle(color: textColor)),
+                            Text('Conta: $nomeConta', style: TextStyle(color: textColor)),
                           ],
                         ),
                       ),
-                      Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400, size: 18),
+                      const Icon(Icons.arrow_forward_ios, color: Colors.white38, size: 16),
                     ],
                   ),
                 ),
@@ -205,10 +230,10 @@ class _CartaoPageState extends State<CartaoPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: primaryColor,
-        icon: const Icon(Icons.add),
-        label: const Text('Adicionar'),
         onPressed: mostrarDialogAdicionarCartao,
+        backgroundColor: accentColor,
+        label: const Text('Adicionar'),
+        icon: const Icon(Icons.add),
       ),
     );
   }
