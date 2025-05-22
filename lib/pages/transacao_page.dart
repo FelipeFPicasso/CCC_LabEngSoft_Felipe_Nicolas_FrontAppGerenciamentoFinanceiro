@@ -109,7 +109,7 @@ class _TransacaoPageState extends State<TransacaoPage> {
             onPressed: () {
               showDialog(
                 context: context,
-                builder: (_) => ComprovanteDialog(idTransacao: transacao['fk_id_transacao']),
+                builder: (_) => ComprovantePage(idTransacao: transacao['fk_id_transacao']),
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),

@@ -104,7 +104,7 @@ class _CartaoPageState extends State<CartaoPage> {
 
     final resultado = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => AdicionarCartaoDialog(
+        builder: (_) => AdicionarCartaoPage(
           token: token,
           usuarioId: int.parse(userId),
         ),
