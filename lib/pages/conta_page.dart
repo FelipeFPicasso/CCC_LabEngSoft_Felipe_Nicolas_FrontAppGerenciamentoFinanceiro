@@ -11,6 +11,7 @@ class ContasPage extends StatefulWidget {
 
 class _ContasPageState extends State<ContasPage> {
   List<Map<String, dynamic>> contas = [];
+  Map<int, double> saldosAtuais = {}; // Saldo atual por contaId
   bool carregando = true;
   String? erro;
 
@@ -50,6 +51,14 @@ class _ContasPageState extends State<ContasPage> {
         contas = response;
         carregando = false;
       });
+
+      // Carregar saldos atuais para cada conta
+      for (var conta in contas) {
+        final saldoAtual = await ApiService.obterSaldoAtualConta(token, conta['id']);
+        setState(() {
+          saldosAtuais[conta['id']] = saldoAtual;
+        });
+      }
     } catch (e) {
       setState(() {
         erro = 'Nenhuma conta adicionada.';
@@ -95,7 +104,7 @@ class _ContasPageState extends State<ContasPage> {
     }
   }
 
-  Future<void> editarConta(Map<String, dynamic> conta) async{
+  Future<void> editarConta(Map<String, dynamic> conta) async {
     final token = await AuthService.obterToken();
     if (token == null) return;
 
@@ -115,8 +124,6 @@ class _ContasPageState extends State<ContasPage> {
       "saldo_inicial": double.tryParse(saldoInicial)
     };
 
-    print(contaEdit['nome_banco']);
-
     final sucesso = await ApiService.editarConta(token, contaEdit);
 
     if (sucesso) {
@@ -134,7 +141,7 @@ class _ContasPageState extends State<ContasPage> {
     }
   }
 
-  Future<void> deletarConta(conta) async{
+  Future<void> deletarConta(conta) async {
     final token = await AuthService.obterToken();
     if (token == null) return;
 
@@ -142,7 +149,7 @@ class _ContasPageState extends State<ContasPage> {
 
     if (sucesso) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Conta excluida com sucesso!')),
+        SnackBar(content: Text('Conta excluída com sucesso!')),
       );
       carregarContas();
     } else {
@@ -186,7 +193,7 @@ class _ContasPageState extends State<ContasPage> {
     );
   }
 
-  void mostrarDialogEditarConta(Map <String, dynamic> conta) {
+  void mostrarDialogEditarConta(Map<String, dynamic> conta) {
     _nomeBancoController.text = conta['nome_banco'];
     _saldoInicialController.text = conta['saldo_inicial'].toString();
 
@@ -223,9 +230,8 @@ class _ContasPageState extends State<ContasPage> {
     );
   }
 
-  static const Color primaryColor = Color.fromARGB(255,45,45,45);
+  static const Color primaryColor = Color.fromARGB(255, 45, 45, 45);
   static const Color backgroundColor = Colors.black87;
-  static const Color cardColor = Colors.white;
   static const Color shadowColor = Color(0x22000000);
 
   TextStyle tituloContaStyle = TextStyle(
@@ -270,6 +276,7 @@ class _ContasPageState extends State<ContasPage> {
           separatorBuilder: (_, __) => SizedBox(height: 16),
           itemBuilder: (context, index) {
             final conta = contas[index];
+            final saldoAtual = saldosAtuais[conta['id']] ?? 0.0;
 
             return Material(
               elevation: 4,
@@ -277,9 +284,6 @@ class _ContasPageState extends State<ContasPage> {
               borderRadius: BorderRadius.circular(12),
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: () {
-                  mostrarDialogEditarConta(conta);
-                },
                 child: Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
@@ -302,7 +306,7 @@ class _ContasPageState extends State<ContasPage> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Saldo: R\$ ${conta['saldo_inicial']}',
+                            'Saldo: R\$ ${saldoAtual.toStringAsFixed(2)}',
                             style: TextStyle(fontSize: 16, color: Colors.white70),
                           ),
                         ],
