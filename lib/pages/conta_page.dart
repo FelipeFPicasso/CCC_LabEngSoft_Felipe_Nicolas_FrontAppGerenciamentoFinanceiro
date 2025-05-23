@@ -81,12 +81,73 @@ class _ContasPageState extends State<ContasPage> {
 
     if (sucesso) {
       Navigator.of(context).pop(); // Fechar o dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Conta criada com sucesso!')),
+      );
+      _nomeBancoController.clear();
+      _saldoInicialController.clear();
+
+      await carregarContas();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao criar conta')),
+      );
+    }
+  }
+
+  Future<void> editarConta(Map<String, dynamic> conta) async{
+    final token = await AuthService.obterToken();
+    if (token == null) return;
+
+    final nomeBanco = _nomeBancoController.text.trim();
+    final saldoInicial = _saldoInicialController.text.trim();
+
+    if (nomeBanco.isEmpty || saldoInicial.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Todos os campos são obrigatórios')),
+      );
+      return;
+    }
+
+    final contaEdit = {
+      "id": conta['id'],
+      "nome_banco": nomeBanco,
+      "saldo_inicial": double.tryParse(saldoInicial)
+    };
+
+    print(contaEdit['nome_banco']);
+
+    final sucesso = await ApiService.editarConta(token, contaEdit);
+
+    if (sucesso) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Conta editada com sucesso!')),
+      );
       _nomeBancoController.clear();
       _saldoInicialController.clear();
       carregarContas();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao criar conta')),
+        SnackBar(content: Text('Erro ao editar conta')),
+      );
+    }
+  }
+
+  Future<void> deletarConta(conta) async{
+    final token = await AuthService.obterToken();
+    if (token == null) return;
+
+    final sucesso = await ApiService.deletarConta(token, conta);
+
+    if (sucesso) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Conta excluida com sucesso!')),
+      );
+      carregarContas();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao excluir conta')),
       );
     }
   }
@@ -125,8 +186,45 @@ class _ContasPageState extends State<ContasPage> {
     );
   }
 
-  static const Color primaryColor = Color(0xFF1B263B);
-  static const Color backgroundColor = Color(0xFFF5F7FA);
+  void mostrarDialogEditarConta(Map <String, dynamic> conta) {
+    _nomeBancoController.text = conta['nome_banco'];
+    _saldoInicialController.text = conta['saldo_inicial'].toString();
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Editar Conta'),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextField(
+                controller: _nomeBancoController,
+                decoration: InputDecoration(labelText: 'Nome do Banco'),
+              ),
+              TextField(
+                controller: _saldoInicialController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(labelText: 'Saldo Inicial'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: Text('Cancelar'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          ElevatedButton(
+            onPressed: () => editarConta(conta),
+            child: Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static const Color primaryColor = Color.fromARGB(255,45,45,45);
+  static const Color backgroundColor = Colors.black87;
   static const Color cardColor = Colors.white;
   static const Color shadowColor = Color(0x22000000);
 
@@ -180,35 +278,53 @@ class _ContasPageState extends State<ContasPage> {
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ContaDetalhesPage(
-                        contaId: conta['id'],
-                        nomeBanco: conta['nome_banco'] ?? 'Sem nome',
-                      ),
-                    ),
-                  );
+                  mostrarDialogEditarConta(conta);
                 },
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: cardColor,
+                    color: primaryColor,
                     borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black12, blurRadius: 4),
+                    ],
                   ),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(Icons.account_balance, size: 40, color: primaryColor),
-                      SizedBox(width: 20),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(conta['nome_banco'] ?? 'Sem nome', style: tituloContaStyle),
-                          ],
-                        ),
+                      // Parte esquerda: informações da conta
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            conta['nome_banco'] ?? 'Banco',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Saldo: R\$ ${conta['saldo_inicial']}',
+                            style: TextStyle(fontSize: 16, color: Colors.white70),
+                          ),
+                        ],
                       ),
-                      Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400, size: 18),
+
+                      // Parte direita: ícones de ação
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.edit, color: Colors.white70),
+                            onPressed: () {
+                              mostrarDialogEditarConta(conta);
+                            },
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete, color: Colors.white70),
+                            onPressed: () {
+                              deletarConta(conta);
+                            },
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

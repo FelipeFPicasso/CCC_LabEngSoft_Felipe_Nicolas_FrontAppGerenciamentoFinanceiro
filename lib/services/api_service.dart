@@ -145,6 +145,32 @@ class ApiService {
     return response.statusCode == 201;
   }
 
+  static Future<bool> editarConta(String token, Map<String, dynamic> conta) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/conta/${conta['id']}'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+      },
+      body: jsonEncode(conta),
+    );
+
+    return response.statusCode == 200;
+  }
+
+  static Future<bool> deletarConta(String token, Map<String, dynamic> conta) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/conta/${conta['id']}'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+      },
+      body: jsonEncode(conta),
+    );
+
+    return response.statusCode == 200;
+  }
+
   static Future<List<Map<String, dynamic>>> getCartoesPorUsuario(String token, int usuarioId) async {
     final url = Uri.parse('$baseUrl/cartoes/usuario/$usuarioId');
 

@@ -27,7 +27,7 @@ class MyApp extends StatelessWidget {
           onError: Colors.red,
           background: Colors.black,  // Scaffold background
           onBackground: Colors.white,
-          surface: Color.fromARGB(255,61,61,61),        // Cor do AlertDialog, Card, etc.
+          surface: Color.fromARGB(255,45,45,45),        // Cor do AlertDialog, Card, etc.
           onSurface: Colors.white,      // Texto em cima do `surface`
         ),
       ),
