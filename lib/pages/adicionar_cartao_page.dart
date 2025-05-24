@@ -1,5 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import 'package:http/http.dart' as http;
 
 class AdicionarCartaoPage extends StatefulWidget {
   final String token;
@@ -22,24 +23,47 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
 
   List<Map<String, dynamic>> _contas = [];
   int? _contaSelecionada;
-
   bool _isLoading = false;
+
+  late String token;
+  late int usuarioId;
+
+  static const String baseUrl = 'http://localhost:8000';
 
   @override
   void initState() {
     super.initState();
+    token = widget.token;
+    usuarioId = widget.usuarioId;
     _buscarContas();
   }
 
   Future<void> _buscarContas() async {
     try {
-      final contas = await ApiService.listarContasUsuario(widget.token, widget.usuarioId.toString());
-      setState(() {
-        _contas = contas;
-        if (_contas.isNotEmpty) {
-          _contaSelecionada = _contas[0]['id'];
-        }
-      });
+      final response = await http.get(
+        Uri.parse('$baseUrl/contas/usuario'),
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('Resposta da API contas: ${response.body}'); // debug para ver o JSON
+
+      if (response.statusCode == 200) {
+        // Supondo que a resposta seja um objeto JSON com uma chave "contas"
+        final Map<String, dynamic> dados = jsonDecode(response.body);
+        final List<dynamic> listaContas = dados['contas']; // ajuste o nome da chave conforme sua API
+
+        setState(() {
+          _contas = listaContas.map((c) => Map<String, dynamic>.from(c)).toList();
+          if (_contas.isNotEmpty) {
+            _contaSelecionada = _contas[0]['id'];
+          }
+        });
+      } else {
+        throw Exception('Erro ao carregar contas: ${response.body}');
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro ao carregar contas: $e')),
@@ -63,29 +87,37 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
       return;
     }
 
-    // Validação simples para formato dd/mm/yyyy
     final regexData = RegExp(r'^\d{2}/\d{2}/\d{4}$');
     if (!regexData.hasMatch(vencFatura)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Data de vencimento deve estar no formato DD/MM/AAAA.')),
+        const SnackBar(content: Text('Data deve estar no formato DD/MM/AAAA.')),
       );
       setState(() => _isLoading = false);
       return;
     }
 
     try {
-      await ApiService.adicionarCartao(
-        token: widget.token,
-        limite: limite,
-        vencFatura: vencFatura,
-        idConta: _contaSelecionada!,
+      final response = await http.post(
+        Uri.parse('$baseUrl/cartoes'),
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'limite': limite,
+          'venc_fatura': vencFatura, // nome do campo correto para o backend
+          'fk_id_conta': _contaSelecionada,
+        }),
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cartão adicionado com sucesso!')),
-      );
-
-      Navigator.of(context).pop(true);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cartão adicionado com sucesso!')),
+        );
+        Navigator.of(context).pop(true);
+      } else {
+        throw Exception('Erro do servidor: ${response.body}');
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro ao adicionar cartão: $e')),
@@ -98,13 +130,16 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Adicionar Cartão'),
+        backgroundColor: Colors.grey[900],
+        title: const Text('Adicionar Cartão', style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator(color: Colors.blueAccent))
             : Form(
           key: _formKey,
           child: Column(
@@ -112,10 +147,13 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
             children: [
               DropdownButtonFormField<int>(
                 decoration: const InputDecoration(labelText: 'Conta'),
+                dropdownColor: Colors.grey[900],
+                style: const TextStyle(color: Colors.white),
                 items: _contas.map((conta) {
                   return DropdownMenuItem<int>(
                     value: conta['id'],
-                    child: Text(conta['nome_conta'] ?? 'Conta sem nome'),
+                    child: Text(conta['nome_banco'] ?? 'Conta sem nome',
+                        style: const TextStyle(color: Colors.white)),
                   );
                 }).toList(),
                 value: _contaSelecionada,
@@ -129,15 +167,16 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _limiteController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Limite'),
+                keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                    labelText: 'Limite',
+                    labelStyle: TextStyle(color: Colors.white)),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Informe o limite';
-                  }
-                  if (double.tryParse(value.replaceAll(',', '.')) == null) {
+                  if (value == null || value.isEmpty) return 'Informe o limite';
+                  if (double.tryParse(value.replaceAll(',', '.')) == null)
                     return 'Limite inválido';
-                  }
                   return null;
                 },
               ),
@@ -145,14 +184,15 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
               TextFormField(
                 controller: _vencFaturaController,
                 keyboardType: TextInputType.datetime,
-                decoration: const InputDecoration(labelText: 'Vencimento da Fatura (DD/MM/AAAA)'),
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                    labelText: 'Vencimento da Fatura (DD/MM/AAAA)',
+                    labelStyle: TextStyle(color: Colors.white)),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
+                  if (value == null || value.isEmpty)
                     return 'Informe o vencimento';
-                  }
-                  if (!RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(value)) {
+                  if (!RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(value))
                     return 'Formato inválido';
-                  }
                   return null;
                 },
               ),
@@ -161,6 +201,8 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _adicionarCartao,
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent),
                   child: const Text('Salvar'),
                 ),
               ),
