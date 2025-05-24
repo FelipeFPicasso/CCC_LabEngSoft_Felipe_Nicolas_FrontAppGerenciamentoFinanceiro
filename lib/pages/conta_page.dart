@@ -3,6 +3,7 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import '../services/api_service.dart';
 import '../services/auth_services.dart';
 import 'detalhes_conta_page.dart';
+import '../widgets/form_dialog.dart';
 
 class ContasPage extends StatefulWidget {
   @override
@@ -47,6 +48,7 @@ class _ContasPageState extends State<ContasPage> {
       }
 
       final response = await ApiService.listarContasUsuario(token, userId);
+      if (!mounted) return;
       setState(() {
         contas = response;
         carregando = false;
@@ -88,6 +90,7 @@ class _ContasPageState extends State<ContasPage> {
 
     final sucesso = await ApiService.criarConta(token, novaConta);
 
+
     if (sucesso) {
       Navigator.of(context).pop(); // Fechar o dialog
       ScaffoldMessenger.of(context).showSnackBar(
@@ -104,12 +107,10 @@ class _ContasPageState extends State<ContasPage> {
     }
   }
 
-  Future<void> editarConta(Map<String, dynamic> conta) async {
+  Future<void> editarConta(Map<String, dynamic> conta, String nomeBanco, String saldoInicial) async {
     final token = await AuthService.obterToken();
     if (token == null) return;
 
-    final nomeBanco = _nomeBancoController.text.trim();
-    final saldoInicial = _saldoInicialController.text.trim();
 
     if (nomeBanco.isEmpty || saldoInicial.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -120,8 +121,8 @@ class _ContasPageState extends State<ContasPage> {
 
     final contaEdit = {
       "id": conta['id'],
-      "nome_banco": nomeBanco,
-      "saldo_inicial": double.tryParse(saldoInicial)
+      "nome_banco": nomeBanco.trim(),
+      "saldo_inicial": double.tryParse(saldoInicial.trim())
     };
 
     final sucesso = await ApiService.editarConta(token, contaEdit);
@@ -133,7 +134,7 @@ class _ContasPageState extends State<ContasPage> {
       );
       _nomeBancoController.clear();
       _saldoInicialController.clear();
-      carregarContas();
+      await carregarContas();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro ao editar conta')),
@@ -193,44 +194,89 @@ class _ContasPageState extends State<ContasPage> {
     );
   }
 
-  void mostrarDialogEditarConta(Map<String, dynamic> conta) {
-    _nomeBancoController.text = conta['nome_banco'];
-    _saldoInicialController.text = conta['saldo_inicial'].toString();
+  void mostrarDialogEditarConta(BuildContext context, Map<String, dynamic> conta) {
+    final _formKey = GlobalKey<FormState>();
+    final _nomeBancoController = TextEditingController(text: conta['nome_banco']);
+    final _saldoInicialController =
+    TextEditingController(text: conta['saldo_inicial'].toString());
+
+    bool salvando = false;
+    String? erro;
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Editar Conta'),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: _nomeBancoController,
-                decoration: InputDecoration(labelText: 'Nome do Banco'),
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            void salvar() async {
+              if (!_formKey.currentState!.validate()) return;
+
+              setState(() => salvando = true);
+
+              try {
+                await editarConta(conta, _nomeBancoController.text,
+                    _saldoInicialController.text);
+                Navigator.of(context).pop(true);
+              } catch (e) {
+                setState(() {
+                  erro = e.toString();
+                  salvando = false;
+                });
+              }
+            }
+
+            return AlertDialog(
+              content: SizedBox(
+                width: 400,
+                child: FormDialog(
+                  titulo: 'Editar Conta',
+                  formFields: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(
+                          controller: _nomeBancoController,
+                          decoration: const InputDecoration(
+                            labelText: 'Nome do banco',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) => value == null || value.isEmpty
+                              ? 'Informe o nome'
+                              : null,
+                        ),
+                        const SizedBox(height: 18),
+                        TextFormField(
+                          controller: _saldoInicialController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(
+                            labelText: 'Saldo Inicial',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) return 'Informe o saldo';
+                            if (double.tryParse(value) == null) return 'Formato de saldo inválido';
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  erro: erro,
+                  salvando: salvando,
+                  onSalvar: salvar,
+                  onCancelar: () => Navigator.of(context).pop(false),
+                ),
               ),
-              TextField(
-                controller: _saldoInicialController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Saldo Inicial'),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            child: Text('Cancelar'),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          ElevatedButton(
-            onPressed: () => editarConta(conta),
-            child: Text('Salvar'),
-          ),
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
-  static const Color primaryColor = Color.fromARGB(255, 45, 45, 45);
+
+  static const Color primaryColor = Color.fromARGB(255, 65, 65, 65);
   static const Color backgroundColor = Colors.black87;
   static const Color shadowColor = Color(0x22000000);
 
@@ -318,7 +364,7 @@ class _ContasPageState extends State<ContasPage> {
                           IconButton(
                             icon: Icon(Icons.edit, color: Colors.white70),
                             onPressed: () {
-                              mostrarDialogEditarConta(conta);
+                              mostrarDialogEditarConta(context, conta);
                             },
                           ),
                           IconButton(

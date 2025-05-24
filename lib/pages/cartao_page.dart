@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import '../services/auth_services.dart';
 import 'adicionar_cartao_page.dart';
+import '../widgets/form_dialog.dart';
 
 class CartaoPage extends StatefulWidget {
   const CartaoPage({super.key});
@@ -18,11 +19,11 @@ class _CartaoPageState extends State<CartaoPage> {
   bool carregando = true;
   String? erro;
 
-  static const Color primaryColor = Color(0xFF1B263B);
-  static const Color backgroundColor = Color(0xFF0D1B2A);
-  static const Color cardColor = Color(0xFF415A77);
+  static const Color primaryColor = Color.fromARGB(255, 43, 43, 43);
+  static const Color backgroundColor = Colors.black87;
+  static const Color cardColor = Color.fromARGB(255, 65, 65, 65);
   static const Color textColor = Color(0xFFE0E1DD);
-  static const Color accentColor = Color(0xFF778DA9);
+  static const Color accentColor = Color(0xFFAAAAAA);
   static const Color shadowColor = Color(0x44000000);
 
   TextStyle tituloCartaoStyle = const TextStyle(
@@ -439,7 +440,6 @@ class _EditarCartaoDialogState extends State<EditarCartaoDialog> {
       'limite': double.tryParse(limiteController.text) ?? 0,
       'venc_fatura': vencFaturaController.text,
       'nome_conta': nomeContaController.text,
-      // Inclua aqui outras propriedades que o backend exigir, ou mantenha as originais
     };
 
     final sucesso = await widget.onSalvar(cartaoAtualizado);
@@ -459,113 +459,73 @@ class _EditarCartaoDialogState extends State<EditarCartaoDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: SingleChildScrollView(
+    return FormDialog(
+      titulo: 'Editar Cartão',
+      formFields: Form(
+        key: _formKey,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Editar Cartão',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            TextFormField(
+              controller: limiteController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Limite',
+                border: OutlineInputBorder(),
               ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Informe o limite';
+                }
+                if (double.tryParse(value) == null) {
+                  return 'Limite inválido';
+                }
+                return null;
+              },
             ),
-            const SizedBox(height: 20),
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: limiteController,
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Limite',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Informe o limite';
-                      }
-                      if (double.tryParse(value) == null) {
-                        return 'Limite inválido';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: vencFaturaController,
-                    decoration: const InputDecoration(
-                      labelText: 'Vencimento da Fatura (AAAA-MM-DD)',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Informe a data de vencimento';
-                      }
-                      // Validação simples de formato YYYY-MM-DD
-                      final regex = RegExp(r'^\d{4}-\d{2}-\d{2}$');
-                      if (!regex.hasMatch(value)) {
-                        return 'Data deve estar no formato AAAA-MM-DD';
-                      }
-                      try {
-                        DateTime.parse(value);
-                      } catch (_) {
-                        return 'Data inválida';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: nomeContaController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nome da Conta',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Informe o nome da conta';
-                      }
-                      return null;
-                    },
-                  ),
-                ],
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: vencFaturaController,
+              decoration: const InputDecoration(
+                labelText: 'Vencimento da Fatura (AAAA-MM-DD)',
+                border: OutlineInputBorder(),
               ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Informe a data de vencimento';
+                }
+                final regex = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+                if (!regex.hasMatch(value)) {
+                  return 'Data deve estar no formato AAAA-MM-DD';
+                }
+                try {
+                  DateTime.parse(value);
+                } catch (_) {
+                  return 'Data inválida';
+                }
+                return null;
+              },
             ),
-            if (erro != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                erro!,
-                style: const TextStyle(color: Colors.redAccent),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: nomeContaController,
+              decoration: const InputDecoration(
+                labelText: 'Nome da Conta',
+                border: OutlineInputBorder(),
               ),
-            ],
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: salvando ? null : () => Navigator.of(context).pop(false),
-                  child: const Text('Cancelar'),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: salvando ? null : salvar,
-                  child: salvando
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                      : const Text('Salvar'),
-                ),
-              ],
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Informe o nome da conta';
+                }
+                return null;
+              },
             ),
           ],
         ),
       ),
+      erro: erro,
+      salvando: salvando,
+      onSalvar: salvar,
+      onCancelar: () => Navigator.of(context).pop(false),
     );
   }
 }
