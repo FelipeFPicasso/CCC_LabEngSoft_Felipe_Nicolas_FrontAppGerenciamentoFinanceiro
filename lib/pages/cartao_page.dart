@@ -33,7 +33,7 @@ class _CartaoPageState extends State<CartaoPage> {
     letterSpacing: 0.3,
   );
 
-  static const String baseUrl = 'http://localhost:8000'; // Ajuste a URL do seu backend
+  static const String baseUrl = 'http://localhost:8000';
 
   @override
   void initState() {
@@ -117,6 +117,30 @@ class _CartaoPageState extends State<CartaoPage> {
   Future<bool> editarCartao(String token, Map<String, dynamic> cartaoAtualizado) async {
     if (cartaoAtualizado['id'] == null) return false;
 
+    // Verifica e converte 'venc_fatura' se estiver no formato dd/MM/yyyy
+    if (cartaoAtualizado.containsKey('venc_fatura')) {
+      final vencFatura = cartaoAtualizado['venc_fatura'];
+
+      if (vencFatura is String && vencFatura.contains('/')) {
+        try {
+          final partes = vencFatura.split('/');
+          final dia = int.parse(partes[0]);
+          final mes = int.parse(partes[1]);
+          final ano = int.parse(partes[2]);
+          final dataConvertida = DateTime(ano, mes, dia);
+
+          // Converte para ISO string no formato esperado pelo backend
+          cartaoAtualizado['venc_fatura'] = dataConvertida.toIso8601String();
+        } catch (e) {
+          print('Erro ao converter data BR para ISO: $e');
+          return false;
+        }
+      } else if (vencFatura is DateTime) {
+        // Converte DateTime direto para ISO
+        cartaoAtualizado['venc_fatura'] = vencFatura.toIso8601String();
+      }
+    }
+
     final url = Uri.parse('$baseUrl/cartoes/${cartaoAtualizado['id']}');
 
     try {
@@ -178,6 +202,7 @@ class _CartaoPageState extends State<CartaoPage> {
   String formatarData(dynamic data) {
     try {
       DateTime dateTime;
+
       if (data is String) {
         dateTime = DateTime.parse(data);
       } else if (data is DateTime) {
@@ -189,6 +214,18 @@ class _CartaoPageState extends State<CartaoPage> {
       return DateFormat('dd/MM/yyyy').format(dateTime);
     } catch (e) {
       return data.toString();
+    }
+  }
+
+  String formatarValor(dynamic valor) {
+    if (valor == null) return 'Limite não informado';
+    try {
+      final numero = double.tryParse(valor.toString());
+      if (numero == null) return 'Limite inválido';
+      final formatador = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+      return formatador.format(numero);
+    } catch (_) {
+      return 'Erro ao formatar';
     }
   }
 
@@ -322,7 +359,7 @@ class _CartaoPageState extends State<CartaoPage> {
           separatorBuilder: (_, __) => const SizedBox(height: 16),
           itemBuilder: (context, index) {
             final cartao = cartoes[index];
-            final limite = cartao['limite']?.toString() ?? 'Limite não informado';
+            final limite = formatarValor(cartao['limite']);
             final vencFatura = cartao['venc_fatura'] != null
                 ? formatarData(cartao['venc_fatura'])
                 : 'Vencimento não informado';
@@ -373,6 +410,7 @@ class _CartaoPageState extends State<CartaoPage> {
     );
   }
 }
+
 
 class EditarCartaoDialog extends StatefulWidget {
   final String token;
@@ -486,16 +524,16 @@ class _EditarCartaoDialogState extends State<EditarCartaoDialog> {
             TextFormField(
               controller: vencFaturaController,
               decoration: const InputDecoration(
-                labelText: 'Vencimento da Fatura (AAAA-MM-DD)',
+                labelText: 'Vencimento da Fatura (DD/MM/YYYY)',
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Informe a data de vencimento';
                 }
-                final regex = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+                final regex = RegExp(r'^\d{2}\d{2}\d{4}$');
                 if (!regex.hasMatch(value)) {
-                  return 'Data deve estar no formato AAAA-MM-DD';
+                  return 'Data deve estar no formato DD/MM/YYYY';
                 }
                 try {
                   DateTime.parse(value);
