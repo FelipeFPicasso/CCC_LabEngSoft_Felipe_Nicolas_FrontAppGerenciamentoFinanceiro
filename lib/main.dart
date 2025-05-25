@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:untitled/pages/adicionar_transacao_page.dart';
+import 'package:untitled/pages/limite_page.dart';
 import 'pages/cadastro_page.dart';
 import 'pages/login_page.dart';
 import 'pages/recuperar_senha_page.dart';
@@ -41,6 +42,7 @@ class MyApp extends StatelessWidget {
         '/cartoes': (context) => CartaoPage(),
         '/contas': (context) => ContasPage(),
         '/adicionar_transacao': (context) => AdicionarTransacaoPage(),
+        '/limite': (context) => LimitePage(),
       },
     );
   }

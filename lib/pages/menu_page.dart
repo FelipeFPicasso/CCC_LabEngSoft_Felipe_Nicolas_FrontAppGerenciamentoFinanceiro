@@ -4,6 +4,7 @@ import '../services/auth_services.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'limite_page.dart';
 
 class MenuPage extends StatefulWidget {
   const MenuPage({super.key});
@@ -162,7 +163,10 @@ class _MenuPageState extends State<MenuPage> {
                       }),
                       const SizedBox(width: 14),
                       _buildMenuButton(context, 'Limite', () {
-                        Navigator.pushNamed(context, '/limite');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LimitePage()),
+                        );
                       }),
                     ],
                   ),
