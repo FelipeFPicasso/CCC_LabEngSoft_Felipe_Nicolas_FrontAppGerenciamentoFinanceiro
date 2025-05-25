@@ -42,7 +42,7 @@ class MyApp extends StatelessWidget {
         '/cartoes': (context) => CartaoPage(),
         '/contas': (context) => ContasPage(),
         '/adicionar_transacao': (context) => AdicionarTransacaoPage(),
-        '/limite': (context) => LimitePage(),
+        '/limite/usuario': (context) => LimitePage(),
       },
     );
   }
