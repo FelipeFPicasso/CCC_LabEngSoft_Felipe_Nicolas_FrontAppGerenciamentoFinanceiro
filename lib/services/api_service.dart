@@ -233,30 +233,5 @@ class ApiService {
     }
   }
 
-  static Future<bool> editarCartao({
-    required String token,
-    required Map<String, dynamic> cartaoAtualizado,
-  }) async {
-    if (cartaoAtualizado['id'] == null) {
-      throw Exception('ID do cartão não informado');
-    }
-
-    final url = Uri.parse('$baseUrl/cartoes/${cartaoAtualizado['id']}');
-
-    final response = await http.put(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': token,
-      },
-      body: jsonEncode(cartaoAtualizado),
-    );
-
-    if (response.statusCode == 200) {
-      return true;
-    } else {
-      throw Exception('Erro ao editar cartão: ${response.statusCode} ${response.body}');
-    }
-  }
 
 }

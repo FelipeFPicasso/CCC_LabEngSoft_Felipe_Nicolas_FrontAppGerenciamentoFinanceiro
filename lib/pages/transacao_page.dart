@@ -83,6 +83,66 @@ class _TransacaoPageState extends State<TransacaoPage> {
     });
   }
 
+  void _confirmarExclusao(int idTransacao) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text('Confirmar exclusão', style: TextStyle(color: Colors.white)),
+        content: Text('Tem certeza que deseja excluir esta transação?', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            child: Text('Cancelar', style: TextStyle(color: Colors.blueAccent)),
+            onPressed: () => Navigator.pop(context),
+          ),
+          TextButton(
+            child: Text('Excluir', style: TextStyle(color: Colors.redAccent)),
+            onPressed: () async {
+              Navigator.pop(context);
+              await _excluirTransacao(idTransacao);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _excluirTransacao(int idTransacao) async {
+    try {
+      final token = await AuthService.obterToken();
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Usuário não autenticado')),
+        );
+        return;
+      }
+
+      final response = await http.delete(
+        Uri.parse('${TransacaoPage.baseUrl}/transacao/$idTransacao'),
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Transação excluída com sucesso!')),
+        );
+        _carregarTransacoes();
+      } else {
+        final erro = jsonDecode(response.body)['erro'] ?? 'Erro desconhecido';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao excluir: $erro')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro de conexão: $e')),
+      );
+    }
+  }
+
   Widget _buildLista() {
     if (_transacoesFiltradas.isEmpty) {
       return Center(
@@ -105,15 +165,23 @@ class _TransacaoPageState extends State<TransacaoPage> {
               Text('Tipo: ${transacao['tipo_transacao']}', style: TextStyle(color: Colors.white60)),
             ],
           ),
-          trailing: ElevatedButton(
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (_) => ComprovanteDialog(idTransacao: transacao['fk_id_transacao']),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
-            child: Text("Comprovante"),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(Icons.receipt_long, color: Colors.blueAccent),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => ComprovanteDialog(idTransacao: transacao['fk_id_transacao']),
+                  );
+                },
+              ),
+              IconButton(
+                icon: Icon(Icons.delete, color: Colors.redAccent),
+                onPressed: () => _confirmarExclusao(transacao['fk_id_transacao']),
+              ),
+            ],
           ),
         );
       },

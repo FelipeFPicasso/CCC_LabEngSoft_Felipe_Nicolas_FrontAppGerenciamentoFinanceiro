@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import '../services/auth_services.dart';
 import 'adicionar_cartao_page.dart';
+import 'editar_cartao_page.dart'; // Importação da página de edição
 import '../widgets/form_dialog.dart';
 
 class CartaoPage extends StatefulWidget {
@@ -114,57 +115,6 @@ class _CartaoPageState extends State<CartaoPage> {
     }
   }
 
-  Future<bool> editarCartao(String token, Map<String, dynamic> cartaoAtualizado) async {
-    if (cartaoAtualizado['id'] == null) return false;
-
-    // Verifica e converte 'venc_fatura' se estiver no formato dd/MM/yyyy
-    if (cartaoAtualizado.containsKey('venc_fatura')) {
-      final vencFatura = cartaoAtualizado['venc_fatura'];
-
-      if (vencFatura is String && vencFatura.contains('/')) {
-        try {
-          final partes = vencFatura.split('/');
-          final dia = int.parse(partes[0]);
-          final mes = int.parse(partes[1]);
-          final ano = int.parse(partes[2]);
-          final dataConvertida = DateTime(ano, mes, dia);
-
-          // Converte para ISO string no formato esperado pelo backend
-          cartaoAtualizado['venc_fatura'] = dataConvertida.toIso8601String();
-        } catch (e) {
-          print('Erro ao converter data BR para ISO: $e');
-          return false;
-        }
-      } else if (vencFatura is DateTime) {
-        // Converte DateTime direto para ISO
-        cartaoAtualizado['venc_fatura'] = vencFatura.toIso8601String();
-      }
-    }
-
-    final url = Uri.parse('$baseUrl/cartoes/${cartaoAtualizado['id']}');
-
-    try {
-      final response = await http.put(
-        url,
-        headers: {
-          'Authorization': '$token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(cartaoAtualizado),
-      );
-
-      if (response.statusCode == 200) {
-        return true;
-      } else {
-        print('Erro ao editar cartão: ${response.statusCode} - ${response.body}');
-        return false;
-      }
-    } catch (e) {
-      print('Exceção ao editar cartão: $e');
-      return false;
-    }
-  }
-
   void mostrarDialogAdicionarCartao() async {
     final token = await AuthService.obterToken();
 
@@ -229,38 +179,6 @@ class _CartaoPageState extends State<CartaoPage> {
     }
   }
 
-  void abrirEditarCartao(Map<String, dynamic> cartao) async {
-    final token = await AuthService.obterToken();
-    if (token == null || JwtDecoder.isExpired(token)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Usuário não autenticado ou sessão expirada.')),
-      );
-      return;
-    }
-
-    final resultado = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black54,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 80),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: EditarCartaoDialog(
-          token: token,
-          cartao: cartao,
-          onSalvar: (cartaoAtualizado) async {
-            final sucesso = await editarCartao(token, cartaoAtualizado);
-            return sucesso;
-          },
-        ),
-      ),
-    );
-
-    if (resultado == true) {
-      carregarCartoes();
-    }
-  }
-
   void confirmarExcluirCartao(int idCartao) {
     showDialog(
       context: context,
@@ -290,7 +208,7 @@ class _CartaoPageState extends State<CartaoPage> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Cartão excluído com sucesso.')),
                 );
-                carregarCartoes();
+                carregarCartoes();  // Atualiza a lista após exclusão
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Falha ao excluir cartão.')),
@@ -354,55 +272,102 @@ class _CartaoPageState extends State<CartaoPage> {
             style: TextStyle(color: textColor),
           ),
         )
-            : ListView.separated(
-          itemCount: cartoes.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 16),
-          itemBuilder: (context, index) {
-            final cartao = cartoes[index];
-            final limite = formatarValor(cartao['limite']);
-            final vencFatura = cartao['venc_fatura'] != null
-                ? formatarData(cartao['venc_fatura'])
-                : 'Vencimento não informado';
-            final nomeConta = cartao['nome_conta'] ?? 'Conta não informada';
-
-            return Material(
-              color: Colors.transparent,
-              elevation: 5,
-              shadowColor: shadowColor,
-              borderRadius: BorderRadius.circular(14),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () => abrirEditarCartao(cartao),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: cardColor,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  padding: const EdgeInsets.all(18),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.credit_card, size: 40, color: accentColor),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Limite: $limite', style: tituloCartaoStyle),
-                            const SizedBox(height: 4),
-                            Text('Vencimento: $vencFatura', style: TextStyle(color: textColor)),
-                            const SizedBox(height: 4),
-                            Text('Conta: $nomeConta', style: TextStyle(color: textColor)),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
-                        onPressed: () => confirmarExcluirCartao(cartao['id']),
-                      ),
-                    ],
-                  ),
+            : FutureBuilder<String?>(
+          future: AuthService.obterToken(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                  child: CircularProgressIndicator(color: accentColor));
+            }
+            if (!snapshot.hasData || snapshot.data == null || JwtDecoder.isExpired(snapshot.data!)) {
+              return Center(
+                child: Text(
+                  'Sessão expirada. Faça login novamente.',
+                  style: const TextStyle(color: Colors.redAccent),
                 ),
-              ),
+              );
+            }
+
+            final token = snapshot.data!;
+
+            return ListView.separated(
+              itemCount: cartoes.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                final cartao = cartoes[index];
+                final limite = formatarValor(cartao['limite']);
+                final vencFatura = cartao['venc_fatura'] != null
+                    ? formatarData(cartao['venc_fatura'])
+                    : 'Vencimento não informado';
+                final nomeConta = cartao['nome_conta'] ?? 'Conta não informada';
+
+                return Material(
+                  color: Colors.transparent,
+                  elevation: 5,
+                  shadowColor: shadowColor,
+                  borderRadius: BorderRadius.circular(14),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () async {
+                      final resultado = await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => EditarCartaoPage(
+                            cartaoId: cartao['id'],
+                            token: token,
+                          ),
+                        ),
+                      );
+                      if (resultado == true) {
+                        carregarCartoes();
+                      }
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.all(18),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.credit_card,
+                            color: accentColor,
+                            size: 40,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  nomeConta,
+                                  style: tituloCartaoStyle,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Limite: $limite',
+                                  style: const TextStyle(color: accentColor),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Vencimento fatura: $vencFatura',
+                                  style: const TextStyle(color: accentColor),
+                                ),
+                                const SizedBox(height: 4),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.redAccent),
+                            onPressed: () => confirmarExcluirCartao(cartao['id']),
+                            tooltip: 'Excluir cartão',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
             );
           },
         ),
@@ -410,161 +375,3 @@ class _CartaoPageState extends State<CartaoPage> {
     );
   }
 }
-
-
-class EditarCartaoDialog extends StatefulWidget {
-  final String token;
-  final Map<String, dynamic> cartao;
-  final Future<bool> Function(Map<String, dynamic>) onSalvar;
-
-  const EditarCartaoDialog({
-    Key? key,
-    required this.token,
-    required this.cartao,
-    required this.onSalvar,
-  }) : super(key: key);
-
-  @override
-  State<EditarCartaoDialog> createState() => _EditarCartaoDialogState();
-}
-
-class _EditarCartaoDialogState extends State<EditarCartaoDialog> {
-  final _formKey = GlobalKey<FormState>();
-
-  late TextEditingController limiteController;
-  late TextEditingController vencFaturaController;
-  late TextEditingController nomeContaController;
-
-  bool salvando = false;
-  String? erro;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Inicializa os controllers com os valores atuais do cartão
-    limiteController = TextEditingController(
-      text: widget.cartao['limite']?.toString() ?? '',
-    );
-
-    vencFaturaController = TextEditingController(
-      text: widget.cartao['venc_fatura'] ?? '',
-    );
-
-    nomeContaController = TextEditingController(
-      text: widget.cartao['nome_conta'] ?? '',
-    );
-  }
-
-  @override
-  void dispose() {
-    limiteController.dispose();
-    vencFaturaController.dispose();
-    nomeContaController.dispose();
-    super.dispose();
-  }
-
-  Future<void> salvar() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      salvando = true;
-      erro = null;
-    });
-
-    // Monta o mapa atualizado do cartão para enviar ao backend
-    final cartaoAtualizado = {
-      'id': widget.cartao['id'],
-      'limite': double.tryParse(limiteController.text) ?? 0,
-      'venc_fatura': vencFaturaController.text,
-      'nome_conta': nomeContaController.text,
-    };
-
-    final sucesso = await widget.onSalvar(cartaoAtualizado);
-
-    setState(() {
-      salvando = false;
-    });
-
-    if (sucesso) {
-      Navigator.of(context).pop(true);
-    } else {
-      setState(() {
-        erro = 'Falha ao salvar alterações. Tente novamente.';
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FormDialog(
-      titulo: 'Editar Cartão',
-      formFields: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            TextFormField(
-              controller: limiteController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Limite',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Informe o limite';
-                }
-                if (double.tryParse(value) == null) {
-                  return 'Limite inválido';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: vencFaturaController,
-              decoration: const InputDecoration(
-                labelText: 'Vencimento da Fatura (DD/MM/YYYY)',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Informe a data de vencimento';
-                }
-                final regex = RegExp(r'^\d{2}\d{2}\d{4}$');
-                if (!regex.hasMatch(value)) {
-                  return 'Data deve estar no formato DD/MM/YYYY';
-                }
-                try {
-                  DateTime.parse(value);
-                } catch (_) {
-                  return 'Data inválida';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: nomeContaController,
-              decoration: const InputDecoration(
-                labelText: 'Nome da Conta',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Informe o nome da conta';
-                }
-                return null;
-              },
-            ),
-          ],
-        ),
-      ),
-      erro: erro,
-      salvando: salvando,
-      onSalvar: salvar,
-      onCancelar: () => Navigator.of(context).pop(false),
-    );
-  }
-}
-
