@@ -20,9 +20,9 @@ class _CartaoPageState extends State<CartaoPage> {
   bool carregando = true;
   String? erro;
 
-  static const Color primaryColor = Color.fromARGB(255, 43, 43, 43);
+  static const Color primaryColor = Color.fromARGB(255, 65, 65, 65);
   static const Color backgroundColor = Colors.black87;
-  static const Color cardColor = Color.fromARGB(255, 65, 65, 65);
+  static const Color cardColor = Color.fromARGB(255, 61, 61, 61);
   static const Color textColor = Color(0xFFE0E1DD);
   static const Color accentColor = Color(0xFFAAAAAA);
   static const Color shadowColor = Color(0x44000000);
