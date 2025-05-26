@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:untitled/pages/adicionar_limite_page.dart';
 import 'package:untitled/pages/adicionar_transacao_page.dart';
 import 'package:untitled/pages/limite_page.dart';
 import 'pages/cadastro_page.dart';
@@ -43,6 +44,7 @@ class MyApp extends StatelessWidget {
         '/contas': (context) => ContasPage(),
         '/adicionar_transacao': (context) => AdicionarTransacaoPage(),
         '/limite/usuario': (context) => LimitePage(),
+        '/limite/adicionar': (context) => AdicionarLimitePage(),
       },
     );
   }
