@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:untitled/pages/editar_limite_page.dart';
 import '../services/auth_services.dart';
 
 class LimitePage extends StatefulWidget {
@@ -132,12 +133,16 @@ class _LimitePageState extends State<LimitePage> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.white),
-                        onPressed: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/limite/editar',
-                            arguments: limite,
-                          ).then((_) => _carregarLimitesDoUsuario());
+                        onPressed: () async {
+                          final atualizado = await showDialog<bool>(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (context) => EditarLimitePopup(limite: limite),
+                          );
+
+                          if (atualizado == true) {
+                            _carregarLimitesDoUsuario();
+                          }
                         },
                         tooltip: 'Editar limite',
                       ),
