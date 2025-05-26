@@ -308,19 +308,8 @@ class _CartaoPageState extends State<CartaoPage> {
                   borderRadius: BorderRadius.circular(14),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(14),
-                    onTap: () async {
-                      final resultado = await Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => EditarCartaoPage(
-                            cartaoId: cartao['id'],
-                            token: token,
-                          ),
-                        ),
-                      );
-                      if (resultado == true) {
-                        carregarCartoes();
-                      }
-                    },
+                    // Removi o onTap para não abrir ao clicar no cartão
+                    onTap: null,
                     child: Container(
                       decoration: BoxDecoration(
                         color: cardColor,
@@ -356,6 +345,23 @@ class _CartaoPageState extends State<CartaoPage> {
                                 const SizedBox(height: 4),
                               ],
                             ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blueAccent),
+                            onPressed: () async {
+                              final resultado = await Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => EditarCartaoPage(
+                                    cartaoId: cartao['id'],
+                                    token: token,
+                                  ),
+                                ),
+                              );
+                              if (resultado == true) {
+                                carregarCartoes();
+                              }
+                            },
+                            tooltip: 'Editar cartão',
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete, color: Colors.redAccent),
