@@ -22,8 +22,10 @@
 - Adicionar o caminho da pasta bin ao Path nas variaveis de ambiente:
     - ![Image](https://github.com/user-attachments/assets/29f726eb-f035-4dd1-b02d-b7e8e8012689)
 - Instalar os requirements que serão sugeridos na IDE (Android Studio)
-- Adcionar o plugin do Flutter na IDE
+- Adocionar o plugin do Flutter na IDE
+    - ![Image](https://github.com/user-attachments/assets/8e938742-9f33-478e-9b3e-8d18fabdefd0)
 - Adicionar o plugin do Dart na IDE
+    - ![Image](https://github.com/user-attachments/assets/6f634e39-7192-49ff-85cd-e4a2e214074d)
 - Localizar o SDK do Dart
     - Estará na dentro da pasta Flutter como padrão
         - ![Image](https://github.com/user-attachments/assets/4982a525-6ead-4e37-b297-08e6cd8644b4)
