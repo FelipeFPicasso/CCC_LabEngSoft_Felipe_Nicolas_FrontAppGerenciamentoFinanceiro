@@ -8,6 +8,7 @@ import 'pages/recuperar_senha_page.dart';
 import 'pages/menu_page.dart';
 import 'pages/cartao_page.dart';
 import 'pages/conta_page.dart';
+import 'pages/relatorio_page.dart';
 
 void main() => runApp(MyApp());
 
@@ -45,6 +46,7 @@ class MyApp extends StatelessWidget {
         '/adicionar_transacao': (context) => AdicionarTransacaoPage(),
         '/limite/usuario': (context) => LimitePage(),
         '/limite/adicionar': (context) => AdicionarLimitePage(),
+        '/relatorio': (context) => RelatorioTransacoesPage(),
       },
     );
   }

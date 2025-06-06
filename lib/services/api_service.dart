@@ -132,6 +132,38 @@ class ApiService {
     }
   }
 
+  static Future<List<Map<String, dynamic>>> obterRelatorioTransacoes(
+      String token, {
+        String? dataInicio,
+        String? dataFim,
+        String? tipo, // opcional, se quiser
+      }) async {
+    final queryParameters = {
+      'data_inicio': dataInicio,
+      'data_fim': dataFim,
+      if (tipo != null) 'tipo': tipo,
+    };
+
+    final uri = Uri.parse('$baseUrl/relatorio_transacao/resumo-por-categoria')
+        .replace(queryParameters: queryParameters);
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return List<Map<String, dynamic>>.from(data);
+    } else {
+      throw Exception('Erro ao carregar relatório: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+
   static Future<bool> criarConta(String token, Map<String, dynamic> conta) async {
     final response = await http.post(
       Uri.parse('$baseUrl/conta'),

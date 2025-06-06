@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'limite_page.dart';
 import 'editar_usuario_page.dart'; // certifique-se de ter esse arquivo criado
+import 'relatorio_page.dart';
 
 class MenuPage extends StatefulWidget {
   const MenuPage({super.key});
@@ -241,6 +242,15 @@ class _MenuPageState extends State<MenuPage> {
                       const SizedBox(width: 14),
                       _buildMenuButton(context, 'Cartões', () {
                         Navigator.pushNamed(context, '/cartoes');
+                      }),
+                    ],
+                  ),
+                  const SizedBox(height: 14), // espaçamento entre linhas
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildMenuButton(context, 'Relatorio', () {
+                        Navigator.pushNamed(context, '/relatorio');
                       }),
                     ],
                   ),
