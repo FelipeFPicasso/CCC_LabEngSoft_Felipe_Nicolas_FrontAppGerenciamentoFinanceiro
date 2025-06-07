@@ -20,7 +20,7 @@
 - git clone https://github.com/FelipeFPicasso/CCC_LabEngSoft_Felipe_Nicolas_FrontAppGerenciamentoFinanceiro.git
 - Instalar Flutter direto do site oficial: https://docs.flutter.dev/install/manual
 - Adicionar o caminho da pasta bin ao Path nas variaveis de ambiente:
-    - ![Image](https://github.com/user-attachments/assets/29f726eb-f035-4dd1-b02d-b7e8e8012689)
+    - ![Image](https://github.com/user-attachments/assets/9929f20e-5b17-44b2-ad86-670e8a9dcf0d)
 - Instalar os requirements que serão sugeridos na IDE (Android Studio)
 - Adicionar o plugin do Flutter na IDE
     - ![Image](https://github.com/user-attachments/assets/8e938742-9f33-478e-9b3e-8d18fabdefd0)
