@@ -4,8 +4,6 @@
 ## Descrição: 
 - O software permitirá o gerenciamento financeiro pessoal, incluindo registro, edição e exclusão de receitas e despesas. Será possível categorizar transações, acompanhar faturas de cartões, definir limites financeiros e visualizar informações em dashboards interativos. Ademais, poderá adicionar suas metas para investimentos e gerenciamento de carteira de investimentos manual.
 
-##TESTANDO
-
 ## Tecnologias:
 - Flask - Framework utilizado para o Back-End (API) | 3.1.0
 - Python - Linguagem utilizada no Back-End | 3.13.2
