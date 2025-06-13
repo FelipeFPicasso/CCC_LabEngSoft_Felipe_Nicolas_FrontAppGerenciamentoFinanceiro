@@ -136,7 +136,7 @@ class ApiService {
       String token, {
         String? dataInicio,
         String? dataFim,
-        String? tipo, // opcional, se quiser
+        String? tipo,
       }) async {
     final queryParameters = {
       'data_inicio': dataInicio,
@@ -146,6 +146,25 @@ class ApiService {
 
     final uri = Uri.parse('$baseUrl/relatorio_transacao/resumo-por-categoria')
         .replace(queryParameters: queryParameters);
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return List<Map<String, dynamic>>.from(data);
+    } else {
+      throw Exception('Erro ao carregar relatório: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> obterCategorias({required String token}) async {
+    final uri = Uri.parse('$baseUrl/categorias');
 
     final response = await http.get(
       uri,

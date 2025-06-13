@@ -90,7 +90,6 @@ class _ContasPageState extends State<ContasPage> {
 
     final sucesso = await ApiService.criarConta(token, novaConta);
 
-
     if (sucesso) {
       Navigator.of(context).pop(); // Fechar o dialog
       ScaffoldMessenger.of(context).showSnackBar(
