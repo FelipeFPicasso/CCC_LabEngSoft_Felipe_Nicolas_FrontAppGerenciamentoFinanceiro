@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:untitled/pages/editar_transacao_temporario_page.dart';
 import '../services/auth_services.dart';
 import 'adicionar_transacao_page.dart';
 // Importa o ComprovanteDialog que criamos
@@ -143,6 +144,112 @@ class _TransacaoPageState extends State<TransacaoPage> {
     }
   }
 
+  Future<void> _mostrarDialogEditar(Map transacao) async {
+    final descricaoController = TextEditingController(text: transacao['descricao']);
+    final valorController = TextEditingController(text: transacao['valor'].toString());
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        bool _saving = false;
+
+        return StatefulBuilder(
+          builder: (context, setStateDialog) => AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: Text('Editar Transação', style: TextStyle(color: Colors.white)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: descricaoController,
+                  style: TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Descrição',
+                    labelStyle: TextStyle(color: Colors.white70),
+                    enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white54)),
+                    focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.blueAccent)),
+                  ),
+                ),
+                TextField(
+                  controller: valorController,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  style: TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Valor',
+                    labelStyle: TextStyle(color: Colors.white70),
+                    enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white54)),
+                    focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.blueAccent)),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: _saving ? null : () => Navigator.pop(context),
+                child: Text('Cancelar', style: TextStyle(color: Colors.blueAccent)),
+              ),
+              TextButton(
+                onPressed: _saving
+                    ? null
+                    : () async {
+                  setStateDialog(() => _saving = true);
+                  try {
+                    final token = await AuthService.obterToken();
+                    if (token == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Usuário não autenticado')),
+                      );
+                      setStateDialog(() => _saving = false);
+                      return;
+                    }
+
+                    final response = await http.post(
+                      Uri.parse('${TransacaoPage.baseUrl}/transacao'),
+                      headers: {
+                        'Authorization': token,
+                        'Content-Type': 'application/json',
+                      },
+                      body: jsonEncode({
+                        'descricao': descricaoController.text,
+                        'valor': double.tryParse(valorController.text) ?? 0,
+                      }),
+                    );
+
+                    if (response.statusCode == 200) {
+                      Navigator.pop(context);
+                      _carregarTransacoes();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Transação atualizada com sucesso!')),
+                      );
+                    } else {
+                      final erro = jsonDecode(response.body)['erro'] ?? 'Erro desconhecido';
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Erro ao atualizar: $erro')),
+                      );
+                      setStateDialog(() => _saving = false);
+                    }
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Erro de conexão: $e')),
+                    );
+                    setStateDialog(() => _saving = false);
+                  }
+                },
+                child: _saving
+                    ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+                    : Text('Salvar', style: TextStyle(color: Colors.blueAccent)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildLista() {
     if (_transacoesFiltradas.isEmpty) {
       return Center(
@@ -175,6 +282,20 @@ class _TransacaoPageState extends State<TransacaoPage> {
                     context: context,
                     builder: (_) => ComprovanteDialog(idTransacao: transacao['fk_id_transacao']),
                   );
+                },
+              ),
+              IconButton(
+                icon: Icon(Icons.edit, color: Colors.orangeAccent),
+                onPressed: () async {
+                  final resultado = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditarTransacaoPage(transacao: transacao),
+                    ),
+                  );
+                  if (resultado != null) {
+                    _carregarTransacoes(); // Recarrega a lista ao voltar
+                  }
                 },
               ),
               IconButton(
