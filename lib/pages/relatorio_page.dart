@@ -17,24 +17,74 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
   static const Color shadowColor = Color(0x22000000);
 
   String? tipoSelecionado;
-  String? categoriaSelecionada;
+  List<String> categoriasSelecionadas = [];
   List<String> categorias = [];
+  List<Map<String, dynamic>> relatorio = [];
   DateTime? dataInicio;
   DateTime? dataFim;
   bool carregandoCategorias = true;
+  late String? token;
+
 
   @override
   void initState() {
     super.initState();
     carregarCategorias();
+    carregarRelatorio();
+  }
+
+  bool filtrosAtivos() {
+    return dataInicio != null ||
+        dataFim != null ||
+        tipoSelecionado != null ||
+        categoriasSelecionadas.isNotEmpty;
+  }
+
+  Future<void> carregarRelatorio() async {
+    try {
+      if (filtrosAtivos()) {
+        final resultado = await ApiService.obterRelatorioFiltrado(
+          token!,
+          dataInicio: dataInicio != null ? DateFormat('yyyy-MM-dd').format(dataInicio!) : null,
+          dataFim: dataFim != null ? DateFormat('yyyy-MM-dd').format(dataFim!) : null,
+          tipo: tipoSelecionado,
+          categorias: categoriasSelecionadas,
+        );
+        setState(() {
+          relatorio = resultado;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Relatório carregado com sucesso!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        final resultado = await ApiService.obterResumoPorCategoria(token!);
+        setState(() {
+          relatorio = resultado;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Erro ao carregar relatório!"),
+          backgroundColor: Colors.green,
+        ),
+
+      );
+    }
   }
 
   Future<void> carregarCategorias() async {
-    final token = await AuthService.obterToken();
-    if (token == null) return;
+    final tempToken = await AuthService.obterToken();
+    if (tempToken == null) return;
+
+    token = tempToken;
 
     try {
-      final resultado = await ApiService.obterCategorias(token: token);
+      final resultado = await ApiService.obterCategorias(token!);
       setState(() {
         categorias = resultado.map((cat) => cat['nome'].toString()).toList();
         carregandoCategorias = false;
@@ -70,6 +120,14 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
     }
   }
 
+  //Style variables
+  double borderValue = 8;
+  final double containerHeight = 45;
+  final double containerMinWidth = 180;
+  final double containerMaxWidth = 220;
+  final double borderRadiusValue = 12;
+  final Color borderColor = Colors.white24;
+
   @override
   Widget build(BuildContext context) {
     final textStyle = TextStyle(color: Colors.white);
@@ -81,72 +139,212 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
         backgroundColor: primaryColor,
         shadowColor: shadowColor,
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            DropdownButtonFormField<String>(
-              value: tipoSelecionado,
-              dropdownColor: primaryColor,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: primaryColor,
-                labelText: 'Tipo',
-                labelStyle: textStyle,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              items: ['Receita', 'Despesa'].map((tipo) {
-                return DropdownMenuItem(
-                  value: tipo,
-                  child: Text(tipo, style: textStyle),
-                );
-              }).toList(),
-              onChanged: (valor) {
-                setState(() {
-                  tipoSelecionado = valor;
-                });
-              },
-            ),
-            SizedBox(height: 12),
-              carregandoCategorias
-                  ? CircularProgressIndicator(color: Colors.white)
-                  : DropdownButtonFormField<String>(
-                value: categoriaSelecionada,
-                dropdownColor: primaryColor,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: primaryColor,
-                  labelText: 'Categoria',
-                  labelStyle: textStyle,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                items: categorias.map((cat) {
-                  return DropdownMenuItem(
-                    value: cat,
-                    child: Text(cat, style: textStyle),
-                  );
-                }).toList(),
-                onChanged: (valor) {
-                  setState(() {
-                    categoriaSelecionada = valor;
-                  });
-                },
-              ),
-            SizedBox(height: 12),
-            // Datas
-            Row(
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Expanded(
+                Container(
+                  width: 200,
+                  padding: EdgeInsets.symmetric(
+                      vertical: borderValue,
+                      horizontal: borderValue
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                tipoSelecionado = tipoSelecionado == 'Receita'
+                                    ? null : 'Receita';
+                              });
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: borderColor),
+                                color: tipoSelecionado == 'Receita'
+                                    ? const Color(0xFF009933)
+                                    : primaryColor,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(8),
+                                  bottomLeft: Radius.circular(8),
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              padding: EdgeInsets.symmetric(
+                                  vertical: borderValue,
+                                  horizontal: borderValue
+                              ),
+                              child: const Text(
+                                'Receita',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                tipoSelecionado = tipoSelecionado == 'Despesa'
+                                    ? null : 'Despesa';
+                              });
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: borderColor),
+                                color: tipoSelecionado == 'Despesa'
+                                    ? const Color(0xffcc0000)
+                                    : primaryColor,
+                                borderRadius: const BorderRadius.only(
+                                  topRight: Radius.circular(8),
+                                  bottomRight: Radius.circular(8),
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              padding: EdgeInsets.symmetric(
+                                  vertical: borderValue,
+                                  horizontal: borderValue
+                              ),
+                              child: const Text(
+                                'Despesa',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Botão Selecionar Categorias
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          List<String> tempSelecionadas = List.from(categoriasSelecionadas);
+                          return StatefulBuilder(
+                            builder: (context, setStateDialog) {
+                              return AlertDialog(
+                                backgroundColor: primaryColor,
+                                title: Text('Selecione as categorias', style: TextStyle(color: Colors.white)),
+                                content: SingleChildScrollView(
+                                  child: Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: categorias.map((cat) {
+                                      final selecionado = tempSelecionadas.contains(cat);
+                                      return MouseRegion(
+                                        cursor: SystemMouseCursors.click,
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            setStateDialog(() {
+                                              if (selecionado) {
+                                                tempSelecionadas.remove(cat);
+                                              } else {
+                                                tempSelecionadas.add(cat);
+                                              }
+                                            });
+                                          },
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                            decoration: BoxDecoration(
+                                              color: selecionado ? Colors.blue : Colors.transparent,
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(color: Colors.white24),
+                                            ),
+                                            child: Text(
+                                              cat,
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: selecionado ? FontWeight.bold : FontWeight.normal,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    child: Text('Cancelar', style: TextStyle(color: Colors.white70)),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                                    child: Text('Aplicar'),
+                                    onPressed: () {
+                                      setState(() {
+                                        categoriasSelecionadas = List.from(tempSelecionadas);
+                                      });
+                                      Navigator.pop(context);
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                      );
+                    },
+                    child: Container(
+                      constraints: BoxConstraints(minWidth: 180, maxWidth: 300),
+                      padding: EdgeInsets.all(borderValue),
+                      decoration: BoxDecoration(
+                        color: primaryColor,
+                        borderRadius: BorderRadius.circular(borderValue),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        categoriasSelecionadas.isEmpty
+                            ? 'Selecionar Categorias'
+                            : 'Categorias: ${categoriasSelecionadas.join(', ')}',
+                        style: TextStyle(color: Colors.white),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
                   child: GestureDetector(
                     onTap: () => _selecionarData(context, true),
                     child: Container(
-                      padding: EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                      width: 200,
+                      padding: EdgeInsets.symmetric(
+                        vertical: borderValue,
+                        horizontal: borderValue,
+                      ),
                       decoration: BoxDecoration(
                         color: primaryColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white24),
+                        borderRadius: BorderRadius.circular(borderValue),
+                        border: Border.all(color: borderColor),
                       ),
+                      alignment: Alignment.center,
                       child: Text(
                         dataInicio == null
                             ? 'Data Início'
@@ -156,22 +354,30 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
                     ),
                   ),
                 ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _selecionarData(context, false),
+
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child:GestureDetector(
                     child: Container(
-                      padding: EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                      width: 200,
+                      padding: EdgeInsets.symmetric(
+                          vertical: borderValue,
+                          horizontal: borderValue
+                      ),
                       decoration: BoxDecoration(
                         color: primaryColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white24),
+                        borderRadius: BorderRadius.circular(borderValue),
+                        border: Border.all(color: borderColor),
                       ),
-                      child: Text(
-                        dataFim == null
-                            ? 'Data Fim'
-                            : DateFormat('dd/MM/yyyy').format(dataFim!),
-                        style: textStyle,
+                      alignment: Alignment.center,
+                      child: GestureDetector(
+                        onTap: () => _selecionarData(context, false),
+                        child: Text(
+                          dataFim == null
+                              ? 'Data Fim'
+                              : DateFormat('dd/MM/yyyy').format(dataFim!),
+                          style: textStyle,
+                        ),
                       ),
                     ),
                   ),
@@ -179,26 +385,66 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
               ],
             ),
             SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                // Chamará a função para carregar os dados do relatório
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                padding: EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: 180,
+                maxWidth: 300,
               ),
-              icon: Icon(Icons.filter_alt, color: Colors.white),
-              label: Text('Aplicar Filtros', style: textStyle),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  carregarRelatorio();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(borderValue),
+                  ),
+                ),
+                icon: Icon(Icons.filter_alt, color: Colors.white),
+                label: Text('Aplicar Filtros', style: textStyle),
+              ),
             ),
             SizedBox(height: 24),
-            // Aqui virá a visualização dos resultados (cards, gráfico, etc.)
             Expanded(
-              child: Center(
+              child: relatorio.isEmpty
+                  ? Center(
                 child: Text(
-                  'Resultados serão exibidos aqui...',
+                  'Nenhum dado encontrado.',
                   style: textStyle.copyWith(color: Colors.white70),
                 ),
+              )
+                  : ListView.builder(
+                itemCount: relatorio.length,
+                itemBuilder: (context, index) {
+                  final item = relatorio[index];
+                  return Container(
+                    margin: EdgeInsets.symmetric(vertical: 4),
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: primaryColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item['categoria'] ?? 'Sem categoria',
+                          style: textStyle.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Total: R\$ ${item['total'].toString()}',
+                          style: textStyle,
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ],

@@ -132,19 +132,41 @@ class ApiService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> obterRelatorioTransacoes(
+  static Future<List<Map<String, dynamic>>> obterResumoPorCategoria(String token) async {
+    final uri = Uri.parse('$baseUrl/relatorio_transacao/resumo-por-categoria');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return List<Map<String, dynamic>>.from(data);
+    } else {
+      throw Exception('Erro ao carregar resumo: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> obterRelatorioFiltrado(
       String token, {
         String? dataInicio,
         String? dataFim,
         String? tipo,
+        List<String?>? categorias,
       }) async {
     final queryParameters = {
-      'data_inicio': dataInicio,
-      'data_fim': dataFim,
+      if (dataInicio != null) 'data_inicio': dataInicio,
+      if (dataFim != null) 'data_fim': dataFim,
       if (tipo != null) 'tipo': tipo,
+      if (categorias != null && categorias.isNotEmpty)
+        'categorias': categorias.join(','),
     };
 
-    final uri = Uri.parse('$baseUrl/relatorio_transacao/resumo-por-categoria')
+    final uri = Uri.parse('$baseUrl/relatorio_transacao/filtro')
         .replace(queryParameters: queryParameters);
 
     final response = await http.get(
@@ -163,7 +185,7 @@ class ApiService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> obterCategorias({required String token}) async {
+  static Future<List<Map<String, dynamic>>> obterCategorias(String token) async {
     final uri = Uri.parse('$baseUrl/categorias');
 
     final response = await http.get(
@@ -178,7 +200,7 @@ class ApiService {
       final data = jsonDecode(response.body);
       return List<Map<String, dynamic>>.from(data);
     } else {
-      throw Exception('Erro ao carregar relatório: ${response.statusCode} - ${response.body}');
+      throw Exception('Erro ao carregar categorias: ${response.statusCode} - ${response.body}');
     }
   }
 
