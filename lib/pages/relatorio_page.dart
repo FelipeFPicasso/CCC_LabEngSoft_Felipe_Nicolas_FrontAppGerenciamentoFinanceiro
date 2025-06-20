@@ -45,8 +45,8 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
       if (filtrosAtivos()) {
         final resultado = await ApiService.obterRelatorioFiltrado(
           token!,
-          dataInicio: dataInicio != null ? DateFormat('yyyy-MM-dd').format(dataInicio!) : null,
-          dataFim: dataFim != null ? DateFormat('yyyy-MM-dd').format(dataFim!) : null,
+          dataInicio: dataInicio != null ? DateFormat('dd/MM/yyyy').format(dataInicio!) : null,
+          dataFim: dataFim != null ? DateFormat('dd/MM/yyyy').format(dataFim!) : null,
           tipo: tipoSelecionado,
           categorias: categoriasSelecionadas,
         );
@@ -118,6 +118,111 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
         }
       });
     }
+  }
+
+  Widget buildResumo() {
+    double totalReceita = relatorio
+        .where((item) => (item['total'] ?? 0) > 0)
+        .fold(0.0, (sum, item) => sum + (item['total'] as num).toDouble());
+
+    double totalDespesa = relatorio
+        .where((item) => (item['total'] ?? 0) < 0)
+        .fold(0.0, (sum, item) => sum + (item['total'] as num).toDouble());
+
+    double saldo = totalReceita + totalDespesa;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        buildResumoCard('Receitas', totalReceita, Colors.green),
+        buildResumoCard('Despesas', totalDespesa, Colors.red),
+        buildResumoCard('Saldo', saldo, saldo >= 0 ? Colors.blue : Colors.red),
+      ],
+    );
+  }
+
+  Widget buildGraficoPizza() {
+    if (relatorio.isEmpty) {
+      return Center(
+        child: Text('Sem dados para o gráfico.', style: TextStyle(color: Colors.white70)),
+      );
+    }
+
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: primaryColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24),
+      ),
+      height: 300,
+      child: PieChart(
+        PieChartData(
+          sectionsSpace: 2,
+          centerSpaceRadius: 40,
+          sections: relatorio.map((item) {
+            final valor = (item['total'] as num).abs().toDouble();
+            final categoria = item['categoria'] ?? 'Sem categoria';
+
+            return PieChartSectionData(
+              value: valor,
+              color: getColorForCategory(categoria),
+              title: '${categoria}',
+              radius: 80,
+              titleStyle: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Color getColorForCategory(String categoria) {
+    final colors = [
+      Colors.blue,
+      Colors.red,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+      Colors.yellow,
+      Colors.pink,
+      Colors.cyan,
+      Colors.indigo,
+    ];
+    return colors[categoria.hashCode % colors.length];
+  }
+
+  Widget buildResumoCard(String titulo, double valor, Color cor) {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: primaryColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Column(
+        children: [
+          Text(
+            titulo,
+            style: TextStyle(color: Colors.white70),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'R\$ ${valor.toStringAsFixed(2)}',
+            style: TextStyle(
+              color: cor,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   //Style variables
@@ -405,6 +510,10 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
                 label: Text('Aplicar Filtros', style: textStyle),
               ),
             ),
+            SizedBox(height: 16),
+            buildResumo(),
+            SizedBox(height: 16),
+            buildGraficoPizza(),
             SizedBox(height: 24),
             Expanded(
               child: relatorio.isEmpty
