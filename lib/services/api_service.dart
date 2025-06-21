@@ -166,7 +166,7 @@ class ApiService {
         'categorias': categorias.join(','),
     };
 
-    final uri = Uri.parse('$baseUrl/relatorio_transacao/filtro')
+    final uri = Uri.parse('$baseUrl/relatorio_transacao/resumo-por-categoria')
         .replace(queryParameters: queryParameters);
 
     final response = await http.get(

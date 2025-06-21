@@ -148,31 +148,172 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
       );
     }
 
-    return Container(
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: primaryColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white24),
+    double totalGeral = relatorio.fold(
+      0.0, (sum, item) => sum + (item['total'].abs() as double),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        bool isMobile = constraints.maxWidth < 600;
+
+        return Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: primaryColor,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.white24),
+          ),
+          child: isMobile
+              ? Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              grafico(totalGeral),
+              SizedBox(height: 16),
+              legenda(totalGeral),
+            ],
+          )
+              : Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 2,
+                child: legenda(totalGeral),
+              ),
+              SizedBox(width: 50),
+              Expanded(
+                flex: 1,
+                child: grafico(totalGeral),
+              )
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget legenda(double totalGeral) {
+    bool isMobile = MediaQuery.of(context).size.width < 600;
+
+    return IntrinsicWidth(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'Categoria',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'Total',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    '%',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          ...relatorio.map((item) {
+            final percentual = (item['total'].abs() / totalGeral) * 100;
+            final color = getColorForCategory(item['categoria']);
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            item['categoria'],
+                            style: TextStyle(color: Colors.white),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      'R\$ ${item['total'].abs().toStringAsFixed(2)}',
+                      style: TextStyle(color: Colors.white),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      '${percentual.toStringAsFixed(1)}%',
+                      style: TextStyle(color: Colors.white70),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
       ),
-      height: 300,
+    );
+  }
+
+  Widget grafico(double totalGeral) {
+    return SizedBox(
+      width: 200,
+      height: 200,
       child: PieChart(
         PieChartData(
           sectionsSpace: 2,
           centerSpaceRadius: 40,
           sections: relatorio.map((item) {
-            final valor = (item['total'] as num).abs().toDouble();
-            final categoria = item['categoria'] ?? 'Sem categoria';
-
+            final percentual = (item['total'].abs() / totalGeral) * 100;
             return PieChartSectionData(
-              value: valor,
-              color: getColorForCategory(categoria),
-              title: '${categoria}',
-              radius: 80,
+              color: getColorForCategory(item['categoria']),
+              value: item['total'].abs().toDouble(),
+              title: '${percentual.toStringAsFixed(1)}%',
+              radius: 60,
               titleStyle: TextStyle(
+                fontSize: 14,
                 color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
               ),
             );
           }).toList(),
@@ -181,20 +322,16 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
     );
   }
 
+
   Color getColorForCategory(String categoria) {
-    final colors = [
-      Colors.blue,
-      Colors.red,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.teal,
-      Colors.yellow,
-      Colors.pink,
-      Colors.cyan,
-      Colors.indigo,
-    ];
-    return colors[categoria.hashCode % colors.length];
+    final cores = {
+      'Alimentação': Colors.red,
+      'Transporte': Colors.blue,
+      'Lazer': Colors.green,
+      'Investimento': Colors.orange,
+      'Outros': Colors.purple,
+    };
+    return cores[categoria] ?? Colors.grey;
   }
 
   Widget buildResumoCard(String titulo, double valor, Color cor) {
