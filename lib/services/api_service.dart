@@ -132,8 +132,23 @@ class ApiService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> obterResumoPorCategoria(String token) async {
-    final uri = Uri.parse('$baseUrl/relatorio_transacao/resumo-por-categoria');
+  static Future<List<Map<String, dynamic>>> carregarTransacoesDetalhadas (
+      String token, {
+  String? dataInicio,
+  String? dataFim,
+  String? tipo,
+  List<String?>? categorias,
+  }) async {
+    final queryParams = {
+      if (dataInicio != null) 'data_inicio': dataInicio,
+      if (dataFim != null) 'data_fim': dataFim,
+      if (tipo != null) 'tipo': tipo,
+      if (categorias != null && categorias.isNotEmpty)
+        'categorias': categorias.join(','),
+    };
+
+    final uri = Uri.parse('$baseUrl/relatorio_transacao/filtro')
+        .replace(queryParameters: queryParams);
 
     final response = await http.get(
       uri,
@@ -147,7 +162,7 @@ class ApiService {
       final data = jsonDecode(response.body);
       return List<Map<String, dynamic>>.from(data);
     } else {
-      throw Exception('Erro ao carregar resumo: ${response.statusCode} - ${response.body}');
+      throw Exception('Erro ao carregar transações detalhadas: ${response.statusCode} - ${response.body}');
     }
   }
 

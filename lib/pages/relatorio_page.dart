@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../services/auth_services.dart';
 import '../services/api_service.dart';
+import '../services/aux_calc.dart';
+import 'dart:ui';
 
 class RelatorioTransacoesPage extends StatefulWidget {
   @override
@@ -16,15 +18,18 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
   static const Color backgroundColor = Colors.black87;
   static const Color shadowColor = Color(0x22000000);
 
-  String? tipoSelecionado;
-  List<String> categoriasSelecionadas = [];
-  List<String> categorias = [];
-  List<Map<String, dynamic>> relatorio = [];
   DateTime? dataInicio;
   DateTime? dataFim;
   bool carregandoCategorias = true;
+  String? tipoSelecionado;
+  List<MapEntry<String, double>> saldoAcumulado = [];
   late String? token;
-
+  List<String> categoriasSelecionadas = [];
+  List<String> categorias = [];
+  List<Map<String, dynamic>> relatorio = [];
+  List<Map<String, dynamic>>? transacoesDetalhadas = [];
+  List<Map<String, dynamic>> receitasPorMes = [];
+  List<Map<String, dynamic>> despesasPorMes = [];
 
   @override
   void initState() {
@@ -42,37 +47,53 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
 
   Future<void> carregarRelatorio() async {
     try {
-      if (filtrosAtivos()) {
-        final resultado = await ApiService.obterRelatorioFiltrado(
-          token!,
-          dataInicio: dataInicio != null ? DateFormat('dd/MM/yyyy').format(dataInicio!) : null,
-          dataFim: dataFim != null ? DateFormat('dd/MM/yyyy').format(dataFim!) : null,
-          tipo: tipoSelecionado,
-          categorias: categoriasSelecionadas,
-        );
-        setState(() {
-          relatorio = resultado;
-        });
+      final resultado = await ApiService.obterRelatorioFiltrado(
+        token!,
+        dataInicio: dataInicio != null ? DateFormat('dd/MM/yyyy').format(dataInicio!) : null,
+        dataFim: dataFim != null ? DateFormat('dd/MM/yyyy').format(dataFim!) : null,
+        tipo: tipoSelecionado,
+        categorias: categoriasSelecionadas,
+      );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Relatório carregado com sucesso!"),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        final resultado = await ApiService.obterResumoPorCategoria(token!);
-        setState(() {
-          relatorio = resultado;
-        });
+      final detalhes = await ApiService.carregarTransacoesDetalhadas(
+        token!,
+        dataInicio: dataInicio != null ? DateFormat('dd/MM/yyyy').format(dataInicio!) : null,
+        dataFim: dataFim != null ? DateFormat('dd/MM/yyyy').format(dataFim!) : null,
+        tipo: tipoSelecionado,
+        categorias: categoriasSelecionadas,
+      );
+
+      Map<String, double> receitasPorMes = agruparPorMes(detalhes, 'Receita');
+      Map<String, double> despesasPorMes = agruparPorMes(detalhes, 'Despesa');
+
+      Map<String, double> saldoPorMes = {};
+      final meses = {...receitasPorMes.keys, ...despesasPorMes.keys};
+      for (var mes in meses) {
+        double r = receitasPorMes[mes] ?? 0;
+        double d = despesasPorMes[mes] ?? 0;
+        saldoPorMes[mes] = r - d;
       }
+
+      final acumulado = calcularSaldoAcumulado(saldoPorMes);
+
+      setState(() {
+        relatorio = resultado;
+        transacoesDetalhadas = detalhes;
+        saldoAcumulado = acumulado;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Relatório carregado com sucesso!"),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Erro ao carregar relatório!"),
-          backgroundColor: Colors.green,
+          backgroundColor: Colors.red,
         ),
-
       );
     }
   }
@@ -120,6 +141,17 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
     }
   }
 
+  String formatarData(String data) {
+    try {
+      final formatoEntrada = DateFormat('EEE, dd MMM yyyy HH:mm:ss', 'en_US');
+      final date = formatoEntrada.parseUtc(data);
+      return DateFormat('dd/MM/yyyy').format(date);
+    } catch (e) {
+      return data;
+    }
+  }
+
+
   Widget buildResumo() {
     double totalReceita = relatorio
         .where((item) => (item['total'] ?? 0) > 0)
@@ -155,7 +187,6 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         bool isMobile = constraints.maxWidth < 600;
-
         return Container(
           padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -173,6 +204,7 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
             ],
           )
               : Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
@@ -191,136 +223,294 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
     );
   }
 
-  Widget legenda(double totalGeral) {
-    bool isMobile = MediaQuery.of(context).size.width < 600;
+  Widget buildGraficoLinhaSaldo(List<MapEntry<String, double>> saldoAcumulado) {
+    if (saldoAcumulado.isEmpty) {
+      return Container(
+        height: 200,
+        alignment: Alignment.center,
+        child: Text(
+          'Sem dados para o gráfico',
+          style: TextStyle(color: Colors.white70),
+        ),
+      );
+    }
 
-    return IntrinsicWidth(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'Categoria',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontWeight: FontWeight.bold,
+    final spots = <FlSpot>[];
+    double minY = saldoAcumulado.first.value;
+    double maxY = saldoAcumulado.first.value;
+
+    for (int i = 0; i < saldoAcumulado.length; i++) {
+      final valor = saldoAcumulado[i].value;
+      spots.add(FlSpot(i.toDouble(), valor));
+
+      if (valor < minY) minY = valor;
+      if (valor > maxY) maxY = valor;
+    }
+    final delta = (maxY - minY) * 0.2;
+    final minGraphY = minY - delta;
+    final maxGraphY = maxY + delta;
+
+    return Container(
+      height: 220,
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: primaryColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: LineChart(
+        LineChartData(
+          gridData: FlGridData(
+            show: true,
+            horizontalInterval: (maxGraphY - minGraphY) / 5,
+            getDrawingHorizontalLine: (value) => FlLine(
+              color: Colors.white12,
+              strokeWidth: 1,
+            ),
+            drawVerticalLine: false,
+          ),
+          titlesData: FlTitlesData(
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                interval: 1,
+                getTitlesWidget: (value, meta) {
+                  int index = value.toInt();
+                  if (index < 0 || index >= saldoAcumulado.length) return Container();
+
+                  String mes = saldoAcumulado[index].key; // "2023-06"
+                  DateTime dt = DateTime.parse('$mes-01');
+                  String label = DateFormat('MM/yyyy').format(dt);
+
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      label,
+                      style: TextStyle(color: Colors.white70, fontSize: 10),
                     ),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'Total',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.right,
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    '%',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.right,
-                  ),
-                ),
-              ],
+                  );
+                },
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                interval: (maxGraphY - minGraphY) / 5,
+                reservedSize: 40,
+                getTitlesWidget: (value, meta) {
+                  return Text(
+                    'R\$${value.toStringAsFixed(0)}',
+                    style: TextStyle(color: Colors.white70, fontSize: 10),
+                  );
+                },
+              ),
+            ),
+            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          ),
+          borderData: FlBorderData(
+            show: true,
+            border: Border.all(color: Colors.white24),
+          ),
+          minX: 0,
+          maxX: (saldoAcumulado.length - 1).toDouble(),
+          minY: minGraphY,
+          maxY: maxGraphY,
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              color: Colors.lightGreenAccent,
+              barWidth: 3,
+              dotData: FlDotData(show: true),
+              belowBarData: BarAreaData(
+                show: true,
+                color: Colors.lightGreenAccent.withOpacity(0.3),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+  Widget legenda(double totalGeral) {
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey[900]!.withAlpha(150),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.grey[600]!.withAlpha(200),
+            width: 1,
             ),
           ),
-
-          ...relatorio.map((item) {
-            final percentual = (item['total'].abs() / totalGeral) * 100;
-            final color = getColorForCategory(item['categoria']);
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
+          child: IntrinsicWidth(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          'Categoria',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        SizedBox(width: 6),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          'Total',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.right,
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          '%',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.right,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                ...relatorio.map((item) {
+                  final percentual = (item['total'].abs() / totalGeral) * 100;
+                  final color = getColorForCategory(item['categoria']);
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
                         Expanded(
+                          flex: 2,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  item['categoria'],
+                                  style: TextStyle(color: Colors.white),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        Expanded(
+                          flex: 2,
                           child: Text(
-                            item['categoria'],
+                            'R\$ ${item['total'].abs().toStringAsFixed(2)}',
                             style: TextStyle(color: Colors.white),
-                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            '${percentual.toStringAsFixed(1)}%',
+                            style: TextStyle(color: Colors.white70),
+                            textAlign: TextAlign.right,
                           ),
                         ),
                       ],
                     ),
-                  ),
-
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'R\$ ${item['total'].abs().toStringAsFixed(2)}',
-                      style: TextStyle(color: Colors.white),
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      '${percentual.toStringAsFixed(1)}%',
-                      style: TextStyle(color: Colors.white70),
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ],
+                  );
+                }),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget grafico(double totalGeral) {
-    return SizedBox(
-      width: 200,
-      height: 200,
-      child: PieChart(
-        PieChartData(
-          sectionsSpace: 2,
-          centerSpaceRadius: 40,
-          sections: relatorio.map((item) {
-            final percentual = (item['total'].abs() / totalGeral) * 100;
-            return PieChartSectionData(
-              color: getColorForCategory(item['categoria']),
-              value: item['total'].abs().toDouble(),
-              title: '${percentual.toStringAsFixed(1)}%',
-              radius: 60,
-              titleStyle: TextStyle(
-                fontSize: 14,
-                color: Colors.white,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double size = constraints.maxWidth < 600 ? 240 : 280;
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              width: size,
+              height: size,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(60),
+                    blurRadius: 8,
+                    offset: Offset(0, 0),
+                  ),
+                ],
+                color: Colors.grey[900]!.withAlpha(150),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.grey[600]!.withAlpha(200),
+                  width: 1,
+                ),
               ),
-            );
-          }).toList(),
-        ),
-      ),
+              child: PieChart(
+                PieChartData(
+                  sectionsSpace: 2,
+                  centerSpaceRadius: 40,
+                  sections: relatorio.map((item) {
+                    final percentual = (item['total'].abs() / totalGeral) * 100;
+                    return PieChartSectionData(
+                      color: getColorForCategory(item['categoria']),
+                      value: item['total'].abs().toDouble(),
+                      title: '${percentual.toStringAsFixed(1)}%',
+                      radius: 60,
+                      titleStyle: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.white,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
+
+
+
 
 
   Color getColorForCategory(String categoria) {
@@ -650,42 +840,100 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
             SizedBox(height: 16),
             buildResumo(),
             SizedBox(height: 16),
-            buildGraficoPizza(),
-            SizedBox(height: 24),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                bool isWide = constraints.maxWidth > 1350;
+                return Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  alignment: WrapAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: isWide ? (constraints.maxWidth / 2) - 8 : constraints.maxWidth,
+                      child: buildGraficoPizza(),
+                    ),
+                    SizedBox(
+                      width: isWide ? (constraints.maxWidth / 2) - 8 : constraints.maxWidth,
+                      child: buildGraficoLinhaSaldo(saldoAcumulado),
+                    ),
+                  ],
+                );
+              },
+            ),
+            SizedBox(height: 16),
             Expanded(
-              child: relatorio.isEmpty
+              child: transacoesDetalhadas == null || transacoesDetalhadas!.isEmpty
                   ? Center(
                 child: Text(
-                  'Nenhum dado encontrado.',
-                  style: textStyle.copyWith(color: Colors.white70),
+                  'Nenhuma transação encontrada.',
+                  style: TextStyle(color: Colors.white70),
                 ),
               )
                   : ListView.builder(
-                itemCount: relatorio.length,
+                itemCount: transacoesDetalhadas!.length,
                 itemBuilder: (context, index) {
-                  final item = relatorio[index];
+                  final item = transacoesDetalhadas![index];
                   return Container(
                     margin: EdgeInsets.symmetric(vertical: 4),
-                    padding: EdgeInsets.all(12),
+                    padding: EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: primaryColor,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Colors.white24),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          item['categoria'] ?? 'Sem categoria',
-                          style: textStyle.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              item['categoria'] ?? 'Sem categoria',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Icon(Icons.calendar_today,color: Colors.white54, size:14),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Data: ${formatarData(item['data'])}',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                              ],
+                            )
+                          ],
                         ),
-                        SizedBox(height: 4),
+                        SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  item['tipo'] == 'Receita' ? Icons.arrow_upward : Icons.arrow_downward,
+                                  color: item['tipo'] == 'Receita' ? Colors.green : Colors.red,
+                                  size: 16,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  item['tipo'],
+                                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                                ),
+                              ],
+                            )
+                          ],
+                        ),
                         Text(
-                          'Total: R\$ ${item['total'].toString()}',
-                          style: textStyle,
+                        'R\$ ${item['total'].toString()}',
+                        style: TextStyle(
+                          color: item['total'] >= 0 ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          ),
                         ),
                       ],
                     ),
