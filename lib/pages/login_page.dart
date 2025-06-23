@@ -45,7 +45,7 @@ class _LoginPageState extends State<LoginPage> {
       }
     } else {
       setState(() {
-        _erro = 'Login falhou: ${response.body}';
+        _erro = 'Login falhou: Email ou Senha estão incorretos';
       });
     }
   }

@@ -43,30 +43,38 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
       final response = await http.get(
         Uri.parse('$baseUrl/contas/usuario'),
         headers: {
-          'Authorization': token,
+          'Authorization': '$token', // <--- com "Bearer"
           'Content-Type': 'application/json',
         },
       );
 
-      print('Resposta da API contas: ${response.body}'); // debug para ver o JSON
+      print('Resposta da API contas: ${response.body}'); // debug
 
       if (response.statusCode == 200) {
-        // Supondo que a resposta seja um objeto JSON com uma chave "contas"
-        final Map<String, dynamic> dados = jsonDecode(response.body);
-        final List<dynamic> listaContas = dados['contas']; // ajuste o nome da chave conforme sua API
+        try {
+          final Map<String, dynamic> dados = jsonDecode(response.body);
 
-        setState(() {
-          _contas = listaContas.map((c) => Map<String, dynamic>.from(c)).toList();
-          if (_contas.isNotEmpty) {
-            _contaSelecionada = _contas[0]['id'];
+          if (!dados.containsKey('contas') || dados['contas'] == null) {
+            throw Exception('Resposta inválida: chave "contas" ausente.');
           }
-        });
+
+          final List<dynamic> listaContas = dados['contas'];
+
+          setState(() {
+            _contas = listaContas.map((c) => Map<String, dynamic>.from(c)).toList();
+            if (_contas.isNotEmpty) {
+              _contaSelecionada = _contas[0]['id'];
+            }
+          });
+        } catch (e) {
+          throw Exception('Erro ao processar JSON: $e');
+        }
       } else {
         throw Exception('Erro ao carregar contas: ${response.body}');
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao carregar contas: $e')),
+        SnackBar(content: Text('Erro ao buscar contas: $e')),
       );
     }
   }
@@ -100,12 +108,12 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
       final response = await http.post(
         Uri.parse('$baseUrl/cartoes'),
         headers: {
-          'Authorization': token,
+          'Authorization': '$token', // <--- com "Bearer"
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
           'limite': limite,
-          'venc_fatura': vencFatura, // nome do campo correto para o backend
+          'venc_fatura': vencFatura,
           'fk_id_conta': _contaSelecionada,
         }),
       );
@@ -152,8 +160,10 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
                 items: _contas.map((conta) {
                   return DropdownMenuItem<int>(
                     value: conta['id'],
-                    child: Text(conta['nome_banco'] ?? 'Conta sem nome',
-                        style: const TextStyle(color: Colors.white)),
+                    child: Text(
+                      conta['nome_banco'] ?? 'Conta sem nome',
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   );
                 }).toList(),
                 value: _contaSelecionada,
@@ -167,12 +177,12 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _limiteController,
-                keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
-                    labelText: 'Limite',
-                    labelStyle: TextStyle(color: Colors.white)),
+                  labelText: 'Limite',
+                  labelStyle: TextStyle(color: Colors.white),
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Informe o limite';
                   if (double.tryParse(value.replaceAll(',', '.')) == null)
@@ -186,8 +196,9 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
                 keyboardType: TextInputType.datetime,
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
-                    labelText: 'Vencimento da Fatura (DD/MM/AAAA)',
-                    labelStyle: TextStyle(color: Colors.white)),
+                  labelText: 'Vencimento da Fatura (DD/MM/AAAA)',
+                  labelStyle: TextStyle(color: Colors.white),
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty)
                     return 'Informe o vencimento';

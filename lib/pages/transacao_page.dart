@@ -62,7 +62,7 @@ class _TransacaoPageState extends State<TransacaoPage> {
         });
       } else {
         setState(() {
-          _erro = 'Erro ao carregar transações: ${response.body}';
+          _erro = 'Erro ao carregar transações';
           _loading = false;
         });
       }
