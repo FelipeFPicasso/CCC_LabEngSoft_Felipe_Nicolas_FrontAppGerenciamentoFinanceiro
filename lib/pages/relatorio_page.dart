@@ -223,12 +223,12 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
   }
 
   Widget buildGraficoLinhaSaldo(List<MapEntry<String, double>> saldoAcumulado) {
-    if (saldoAcumulado.isEmpty) {
+    if (saldoAcumulado.isEmpty || saldoAcumulado.length < 2) {
       return Container(
-        height: 200,
+        height: 100,
         alignment: Alignment.center,
         child: Text(
-          'Sem dados para o gráfico',
+          'Dados insuficientes para gerar o gráfico',
           style: TextStyle(color: Colors.white70),
         ),
       );
@@ -923,10 +923,7 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
                     ),
                     SizedBox(
                       width: isWide ? (constraints.maxWidth / 2) - 8 : constraints.maxWidth,
-                      child: Container (
-                        height: 275,
-                        child: buildGraficoLinhaSaldo(saldoAcumulado),
-                      )
+                      child: buildGraficoLinhaSaldo(saldoAcumulado),
                     ),
                   ],
                 );
