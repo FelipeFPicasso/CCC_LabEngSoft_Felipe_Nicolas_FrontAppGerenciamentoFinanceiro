@@ -21,7 +21,9 @@ Map<String, double> agruparPorMes(List<dynamic> transacoes, String tipoFiltro) {
     }
 
     final mes = '${data.year.toString().padLeft(4, '0')}-${data.month.toString().padLeft(2, '0')}';
-    final valor = (t['total'] ?? 0).toDouble();
+    final valorBruto = (t['total'] ?? 0).toDouble();
+
+    final valor = tipo == 'Despesa' ? valorBruto.abs(): valorBruto;
 
     totalPorMes[mes] = (totalPorMes[mes] ?? 0) + valor;
   }

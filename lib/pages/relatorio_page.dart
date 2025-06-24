@@ -167,7 +167,7 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
       children: [
         buildResumoCard('Receitas', totalReceita, Colors.green),
         buildResumoCard('Despesas', totalDespesa, Colors.red),
-        buildResumoCard('Saldo', saldo, saldo >= 0 ? Colors.blue : Colors.red),
+        buildResumoCard('Saldo', saldo, saldo >= 0 ? Colors.green : Colors.red),
       ],
     );
   }
@@ -251,8 +251,15 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
         }
 
         final delta = (maxY - minY).abs() * 0.2;
-        final minGraphY = 0.0;
+        final minGraphY = (minY - delta).ceilToDouble();
         final maxGraphY = (maxY + delta).ceilToDouble();
+
+        final saldoFinal = saldoAcumulado.last.value;
+        final corLinha = saldoFinal >= 0 ? Colors.green : Colors.red;
+        final corArea = (saldoFinal >= 0
+            ? Colors.green
+            : Colors.red)
+            .withAlpha(130);
 
         return Container(
           height: 275,
@@ -373,21 +380,21 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
                   spots: spots,
                   isCurved: true,
                   curveSmoothness: 0.25,
-                  color: Colors.green,
+                  color: corLinha,
                   barWidth: 3,
                   isStrokeCapRound: true,
                   dotData: FlDotData(
                     show: true,
                     getDotPainter: (spot, percent, bar, index) => FlDotCirclePainter(
                       radius: 4,
-                      color: Colors.green,
+                      color: corLinha,
                       strokeWidth: 1,
                       strokeColor: Colors.black,
                     ),
                   ),
                   belowBarData: BarAreaData(
                     show: true,
-                    color: Colors.green.withAlpha(130),
+                    color: corArea,
                   ),
                 ),
               ],
@@ -916,7 +923,10 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
                     ),
                     SizedBox(
                       width: isWide ? (constraints.maxWidth / 2) - 8 : constraints.maxWidth,
-                      child: buildGraficoLinhaSaldo(saldoAcumulado),
+                      child: Container (
+                        height: 275,
+                        child: buildGraficoLinhaSaldo(saldoAcumulado),
+                      )
                     ),
                   ],
                 );
