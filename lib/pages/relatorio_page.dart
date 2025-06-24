@@ -151,7 +151,6 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
     }
   }
 
-
   Widget buildResumo() {
     double totalReceita = relatorio
         .where((item) => (item['total'] ?? 0) > 0)
@@ -235,102 +234,167 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
       );
     }
 
-    final spots = <FlSpot>[];
-    double minY = saldoAcumulado.first.value;
-    double maxY = saldoAcumulado.first.value;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 500;
 
-    for (int i = 0; i < saldoAcumulado.length; i++) {
-      final valor = saldoAcumulado[i].value;
-      spots.add(FlSpot(i.toDouble(), valor));
+        final spots = <FlSpot>[];
+        double minY = saldoAcumulado.first.value;
+        double maxY = saldoAcumulado.first.value;
 
-      if (valor < minY) minY = valor;
-      if (valor > maxY) maxY = valor;
-    }
-    final delta = (maxY - minY) * 0.2;
-    final minGraphY = minY - delta;
-    final maxGraphY = maxY + delta;
+        for (int i = 0; i < saldoAcumulado.length; i++) {
+          final valor = saldoAcumulado[i].value;
+          spots.add(FlSpot(i.toDouble(), valor));
 
-    return Container(
-      height: 220,
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: primaryColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white24),
-      ),
-      child: LineChart(
-        LineChartData(
-          gridData: FlGridData(
-            show: true,
-            horizontalInterval: (maxGraphY - minGraphY) / 5,
-            getDrawingHorizontalLine: (value) => FlLine(
-              color: Colors.white12,
-              strokeWidth: 1,
-            ),
-            drawVerticalLine: false,
-          ),
-          titlesData: FlTitlesData(
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: 1,
-                getTitlesWidget: (value, meta) {
-                  int index = value.toInt();
-                  if (index < 0 || index >= saldoAcumulado.length) return Container();
+          if (valor < minY) minY = valor;
+          if (valor > maxY) maxY = valor;
+        }
 
-                  String mes = saldoAcumulado[index].key; // "2023-06"
-                  DateTime dt = DateTime.parse('$mes-01');
-                  String label = DateFormat('MM/yyyy').format(dt);
+        final delta = (maxY - minY).abs() * 0.2;
+        final minGraphY = 0.0;
+        final maxGraphY = (maxY + delta).ceilToDouble();
 
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      label,
-                      style: TextStyle(color: Colors.white70, fontSize: 10),
-                    ),
-                  );
-                },
-              ),
-            ),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: (maxGraphY - minGraphY) / 5,
-                reservedSize: 40,
-                getTitlesWidget: (value, meta) {
-                  return Text(
-                    'R\$${value.toStringAsFixed(0)}',
-                    style: TextStyle(color: Colors.white70, fontSize: 10),
-                  );
-                },
-              ),
-            ),
-            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          ),
-          borderData: FlBorderData(
-            show: true,
+        return Container(
+          height: 275,
+          padding: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: primaryColor,
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.white24),
           ),
-          minX: 0,
-          maxX: (saldoAcumulado.length - 1).toDouble(),
-          minY: minGraphY,
-          maxY: maxGraphY,
-          lineBarsData: [
-            LineChartBarData(
-              spots: spots,
-              isCurved: true,
-              color: Colors.lightGreenAccent,
-              barWidth: 3,
-              dotData: FlDotData(show: true),
-              belowBarData: BarAreaData(
-                show: true,
-                color: Colors.lightGreenAccent.withOpacity(0.3),
+          child: LineChart(
+            LineChartData(
+              lineTouchData: LineTouchData(
+                handleBuiltInTouches: true,
+                touchTooltipData: LineTouchTooltipData(
+                  tooltipBgColor: Colors.black.withAlpha(130),
+                  tooltipRoundedRadius: 8,
+                  getTooltipItems: (touchedSpots) {
+                    return touchedSpots.map((LineBarSpot touchedSpot) {
+                      return LineTooltipItem(
+                        'R\$ ${touchedSpot.y.toStringAsFixed(2)}',
+                        TextStyle(
+                          color: Colors.white,
+                        ),
+                      );
+                    }).toList();
+                  },
+                ),
+                touchCallback: (FlTouchEvent event, LineTouchResponse? response) {},
+                getTouchedSpotIndicator:
+                    (LineChartBarData barData, List<int> spotIndexes) {
+                  return spotIndexes.map((index) {
+                    return TouchedSpotIndicatorData(
+                      FlLine(color: Colors.white24, strokeWidth: 2),
+                      FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) =>
+                            FlDotCirclePainter(
+                              radius: 6,
+                              color: Colors.amberAccent,
+                              strokeWidth: 1,
+                              strokeColor: Colors.black,
+                            ),
+                      ),
+                    );
+                  }).toList();
+                },
               ),
+              backgroundColor: Colors.grey[900]!,
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                drawHorizontalLine: false,
+              ),
+              titlesData: FlTitlesData(
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    interval: 1,
+                    reservedSize: 28,
+                    getTitlesWidget: (value, meta) {
+                      int index = value.toInt();
+                      if (index < 0 || index >= saldoAcumulado.length) {
+                        return Container();
+                      }
+
+                      String mes = saldoAcumulado[index].key;
+                      DateTime dt = DateTime.parse('$mes-01');
+                      String label = DateFormat('MM/yyyy').format(dt);
+
+                      if (isMobile && index % 2 != 0) return Container();
+
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: isMobile ? 9 : 10,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    interval: (maxGraphY - minGraphY) / 5,
+                    reservedSize: 40,
+                    getTitlesWidget: (value, meta) {
+                      return Text(
+                        'R\$${value.toStringAsFixed(0)}',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: isMobile ? 9 : 10,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                rightTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                topTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+              ),
+              borderData: FlBorderData(
+                show: true,
+                border: Border.all(color: Colors.white24),
+              ),
+              minX: 0,
+              maxX: (saldoAcumulado.length - 1).toDouble(),
+              minY: minGraphY,
+              maxY: maxGraphY,
+              lineBarsData: [
+                LineChartBarData(
+                  spots: spots,
+                  isCurved: true,
+                  curveSmoothness: 0.25,
+                  color: Colors.green,
+                  barWidth: 3,
+                  isStrokeCapRound: true,
+                  dotData: FlDotData(
+                    show: true,
+                    getDotPainter: (spot, percent, bar, index) => FlDotCirclePainter(
+                      radius: 4,
+                      color: Colors.green,
+                      strokeWidth: 1,
+                      strokeColor: Colors.black,
+                    ),
+                  ),
+                  belowBarData: BarAreaData(
+                    show: true,
+                    color: Colors.green.withAlpha(130),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -509,10 +573,6 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
     );
   }
 
-
-
-
-
   Color getColorForCategory(String categoria) {
     final cores = {
       'Alimentação': Colors.red,
@@ -526,24 +586,27 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
 
   Widget buildResumoCard(String titulo, double valor, Color cor) {
     return Container(
-      padding: EdgeInsets.all(12),
+      padding: EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: primaryColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.white24),
       ),
       child: Column(
         children: [
           Text(
             titulo,
-            style: TextStyle(color: Colors.white70),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+            ),
           ),
           SizedBox(height: 4),
           Text(
             'R\$ ${valor.toStringAsFixed(2)}',
             style: TextStyle(
               color: cor,
-              fontSize: 16,
+              fontSize: 17,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -572,8 +635,8 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
         shadowColor: shadowColor,
       ),
 
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(12),
         child: Column(
           children: [
             Wrap(
@@ -668,7 +731,6 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
                   ),
                 ),
 
-                // Botão Selecionar Categorias
                 MouseRegion(
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
@@ -861,85 +923,86 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
               },
             ),
             SizedBox(height: 16),
-            Expanded(
-              child: transacoesDetalhadas == null || transacoesDetalhadas!.isEmpty
-                  ? Center(
-                child: Text(
-                  'Nenhuma transação encontrada.',
-                  style: TextStyle(color: Colors.white70),
-                ),
-              )
-                  : ListView.builder(
-                itemCount: transacoesDetalhadas!.length,
-                itemBuilder: (context, index) {
-                  final item = transacoesDetalhadas![index];
-                  return Container(
-                    margin: EdgeInsets.symmetric(vertical: 4),
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: primaryColor,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white24),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              item['categoria'] ?? 'Sem categoria',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                Icon(Icons.calendar_today,color: Colors.white54, size:14),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Data: ${formatarData(item['data'])}',
-                                  style: TextStyle(color: Colors.white70),
-                                ),
-                              ],
-                            )
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  item['tipo'] == 'Receita' ? Icons.arrow_upward : Icons.arrow_downward,
-                                  color: item['tipo'] == 'Receita' ? Colors.green : Colors.red,
-                                  size: 16,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  item['tipo'],
-                                  style: TextStyle(color: Colors.white70, fontSize: 14),
-                                ),
-                              ],
-                            )
-                          ],
-                        ),
-                        Text(
-                        'R\$ ${item['total'].toString()}',
-                        style: TextStyle(
-                          color: item['total'] >= 0 ? Colors.green : Colors.red,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+
+            transacoesDetalhadas == null || transacoesDetalhadas!.isEmpty
+                ? Center(
+              child: Text(
+                'Nenhuma transação encontrada.',
+                style: TextStyle(color: Colors.white70),
               ),
+            )
+                : ListView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemCount: transacoesDetalhadas!.length,
+              itemBuilder: (context, index) {
+                final item = transacoesDetalhadas![index];
+                return Container(
+                  margin: EdgeInsets.symmetric(vertical: 4),
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: primaryColor,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            item['categoria'] ?? 'Sem categoria',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Icon(Icons.calendar_today, color: Colors.white54, size: 14),
+                              SizedBox(width: 4),
+                              Text(
+                                'Data: ${formatarData(item['data'])}',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                            ],
+                          )
+                        ],
+                      ),
+                      SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                item['tipo'] == 'Receita' ? Icons.arrow_upward : Icons.arrow_downward,
+                                color: item['tipo'] == 'Receita' ? Colors.green : Colors.red,
+                                size: 16,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                item['tipo'],
+                                style: TextStyle(color: Colors.white70, fontSize: 14),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            'R\$ ${item['total'].toString()}',
+                            style: TextStyle(
+                              color: item['total'] >= 0 ? Colors.green : Colors.red,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ],
         ),
