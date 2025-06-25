@@ -594,11 +594,17 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
       'Alimentação': Colors.red,
       'Transporte': Colors.blue,
       'Lazer': Colors.green,
-      'Investimento': Colors.orange,
-      'Outros': Colors.purple,
+      'Saúde': Colors.amber,
+      'Educação': Colors.deepPurple,
+      'Moradia': Colors.teal,
+      'Assinaturas': Colors.indigo,
+      'Compras': Colors.orange,
+      'Investimentos': Colors.pink,
     };
+
     return cores[categoria] ?? Colors.grey;
   }
+
 
   Widget buildResumoCard(String titulo, double valor, Color cor) {
     return Container(
