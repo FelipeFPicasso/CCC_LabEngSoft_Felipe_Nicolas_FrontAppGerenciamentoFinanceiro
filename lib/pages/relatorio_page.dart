@@ -45,6 +45,15 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
         categoriasSelecionadas.isNotEmpty;
   }
 
+  void limparFiltros() {
+    if (!filtrosAtivos()) return;
+        dataInicio = null;
+        dataFim = null;
+        tipoSelecionado = null;
+        categoriasSelecionadas = [];
+        carregarRelatorio();
+  }
+
   Future<void> carregarRelatorio() async {
     try {
       final resultado = await ApiService.obterRelatorioFiltrado(
@@ -886,25 +895,52 @@ class _RelatorioTransacoesPageState extends State<RelatorioTransacoesPage> {
               ],
             ),
             SizedBox(height: 16),
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                minWidth: 180,
-                maxWidth: 300,
-              ),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  carregarRelatorio();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(borderValue),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: 180,
+                    maxWidth: 300,
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      carregarRelatorio();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(borderValue),
+                      ),
+                    ),
+                    icon: Icon(Icons.filter_alt, color: Colors.white),
+                    label: Text('Aplicar Filtros', style: textStyle),
                   ),
                 ),
-                icon: Icon(Icons.filter_alt, color: Colors.white),
-                label: Text('Aplicar Filtros', style: textStyle),
-              ),
+                SizedBox(width: 30),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: 180,
+                    maxWidth: 300,
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      limparFiltros();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(borderValue),
+                      ),
+                    ),
+                    icon: Icon(Icons.delete, color: Colors.white),
+                    label: Text('Limpar Filtros', style: textStyle),
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: 16),
             buildResumo(),
