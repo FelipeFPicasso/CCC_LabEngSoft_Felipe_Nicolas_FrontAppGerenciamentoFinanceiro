@@ -285,20 +285,6 @@ class _TransacaoPageState extends State<TransacaoPage> {
                 },
               ),
               IconButton(
-                icon: Icon(Icons.edit, color: Colors.orangeAccent),
-                onPressed: () async {
-                  final resultado = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EditarTransacaoPage(transacao: transacao),
-                    ),
-                  );
-                  if (resultado != null) {
-                    _carregarTransacoes(); // Recarrega a lista ao voltar
-                  }
-                },
-              ),
-              IconButton(
                 icon: Icon(Icons.delete, color: Colors.redAccent),
                 onPressed: () => _confirmarExclusao(transacao['fk_id_transacao']),
               ),

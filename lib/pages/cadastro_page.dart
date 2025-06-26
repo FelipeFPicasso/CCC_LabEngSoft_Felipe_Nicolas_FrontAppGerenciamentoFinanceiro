@@ -118,7 +118,7 @@ class _CadastroPageState extends State<CadastroPage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.white12,
         elevation: 0,
         centerTitle: true,
         title: const Text('Cadastro', style: TextStyle(color: Colors.white)),

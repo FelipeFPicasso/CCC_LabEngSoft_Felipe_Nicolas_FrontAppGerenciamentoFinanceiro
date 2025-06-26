@@ -43,32 +43,28 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
       final response = await http.get(
         Uri.parse('$baseUrl/contas/usuario'),
         headers: {
-          'Authorization': '$token', // <--- com "Bearer"
+          'Authorization': '$token',
           'Content-Type': 'application/json',
         },
       );
 
-      print('Resposta da API contas: ${response.body}'); // debug
+      print('Resposta da API contas: ${response.body}');
 
       if (response.statusCode == 200) {
-        try {
-          final Map<String, dynamic> dados = jsonDecode(response.body);
+        final Map<String, dynamic> dados = jsonDecode(response.body);
 
-          if (!dados.containsKey('contas') || dados['contas'] == null) {
-            throw Exception('Resposta inválida: chave "contas" ausente.');
-          }
-
-          final List<dynamic> listaContas = dados['contas'];
-
-          setState(() {
-            _contas = listaContas.map((c) => Map<String, dynamic>.from(c)).toList();
-            if (_contas.isNotEmpty) {
-              _contaSelecionada = _contas[0]['id'];
-            }
-          });
-        } catch (e) {
-          throw Exception('Erro ao processar JSON: $e');
+        if (!dados.containsKey('contas') || dados['contas'] == null) {
+          throw Exception('Resposta inválida: chave "contas" ausente.');
         }
+
+        final List<dynamic> listaContas = dados['contas'];
+
+        setState(() {
+          _contas = listaContas.map((c) => Map<String, dynamic>.from(c)).toList();
+          if (_contas.isNotEmpty) {
+            _contaSelecionada = _contas[0]['id'];
+          }
+        });
       } else {
         throw Exception('Erro ao carregar contas: ${response.body}');
       }
@@ -108,7 +104,7 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
       final response = await http.post(
         Uri.parse('$baseUrl/cartoes'),
         headers: {
-          'Authorization': '$token', // <--- com "Bearer"
+          'Authorization': '$token',
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
@@ -154,7 +150,20 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               DropdownButtonFormField<int>(
-                decoration: const InputDecoration(labelText: 'Conta'),
+                decoration: InputDecoration(
+                  labelText: 'Conta',
+                  labelStyle: const TextStyle(color: Colors.white),
+                  filled: true,
+                  fillColor: Colors.grey[900],
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade800),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.blueAccent),
+                  ),
+                ),
                 dropdownColor: Colors.grey[900],
                 style: const TextStyle(color: Colors.white),
                 items: _contas.map((conta) {
@@ -179,9 +188,19 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
                 controller: _limiteController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Limite',
-                  labelStyle: TextStyle(color: Colors.white),
+                  labelStyle: const TextStyle(color: Colors.white),
+                  filled: true,
+                  fillColor: Colors.grey[900],
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade800),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.blueAccent),
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Informe o limite';
@@ -195,9 +214,56 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
                 controller: _vencFaturaController,
                 keyboardType: TextInputType.datetime,
                 style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
+                readOnly: true,
+                onTap: () async {
+                  final DateTime? pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                    builder: (context, child) {
+                      return Theme(
+                        data: ThemeData.dark().copyWith(
+                          colorScheme: const ColorScheme.dark(
+                            primary: Colors.blueAccent,
+                            onPrimary: Colors.grey,
+                            surface: Colors.black,
+                            onSurface: Colors.grey,
+                          ),
+                          dialogBackgroundColor: Colors.grey[900], // <- aqui é o fundo da caixa de diálogo
+                          scaffoldBackgroundColor: Colors.grey[900], // <- e aqui é o fundo geral do calendário
+                          textTheme: const TextTheme(
+                            bodyMedium: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        child: child!,
+                      );
+                    },
+                  );
+
+                  if (pickedDate != null) {
+                    final String formatted = '${pickedDate.day.toString().padLeft(2, '0')}/'
+                        '${pickedDate.month.toString().padLeft(2, '0')}/'
+                        '${pickedDate.year}';
+                    setState(() {
+                      _vencFaturaController.text = formatted;
+                    });
+                  }
+                },
+                decoration: InputDecoration(
                   labelText: 'Vencimento da Fatura (DD/MM/AAAA)',
-                  labelStyle: TextStyle(color: Colors.white),
+                  labelStyle: const TextStyle(color: Colors.white),
+                  filled: true,
+                  fillColor: Colors.grey[900],
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade800),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.blueAccent),
+                  ),
+                  suffixIcon: const Icon(Icons.calendar_today, color: Colors.white),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty)
@@ -213,7 +279,8 @@ class _AdicionarCartaoPageState extends State<AdicionarCartaoPage> {
                 child: ElevatedButton(
                   onPressed: _adicionarCartao,
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent),
+                    backgroundColor: Colors.blueAccent,
+                  ),
                   child: const Text('Salvar'),
                 ),
               ),

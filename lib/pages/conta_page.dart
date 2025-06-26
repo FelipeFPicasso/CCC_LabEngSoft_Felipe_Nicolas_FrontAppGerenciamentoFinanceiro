@@ -361,13 +361,13 @@ class _ContasPageState extends State<ContasPage> {
                       Row(
                         children: [
                           IconButton(
-                            icon: Icon(Icons.edit, color: Colors.white70),
+                            icon: Icon(Icons.edit, color: Colors.blue),
                             onPressed: () {
                               mostrarDialogEditarConta(context, conta);
                             },
                           ),
                           IconButton(
-                            icon: Icon(Icons.delete, color: Colors.white70),
+                            icon: Icon(Icons.delete, color: Colors.redAccent),
                             onPressed: () {
                               deletarConta(conta);
                             },

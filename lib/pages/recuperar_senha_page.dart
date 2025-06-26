@@ -20,16 +20,16 @@ class _RecuperarSenhaPageState extends State<RecuperarSenhaPage> {
     return InputDecoration(
       labelText: label,
       labelStyle: TextStyle(color: Colors.white),
-      floatingLabelStyle: TextStyle(color: Colors.cyanAccent),
+      floatingLabelStyle: TextStyle(color: Colors.white),
       filled: true,
       fillColor: Colors.grey[900],
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.cyanAccent),
+        borderSide: BorderSide(color: Colors.blue),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.cyanAccent, width: 2),
+        borderSide: BorderSide(color: Colors.blue, width: 2),
       ),
       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
@@ -137,7 +137,7 @@ class _RecuperarSenhaPageState extends State<RecuperarSenhaPage> {
                       ),
                     ),
                     onPressed: alterarSenha,
-                    child: Text('Alterar Senha', style: TextStyle(fontSize: 18, color: Colors.black)),
+                    child: Text('Alterar Senha', style: TextStyle(fontSize: 18, color: Colors.white)),
                   ),
                 ),
               ]

@@ -196,7 +196,7 @@ class _LimitePageState extends State<LimitePage> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.white),
+                              icon: const Icon(Icons.edit, color: Colors.blue),
                               onPressed: () async {
                                 final atualizado = await showDialog<bool>(
                                   context: context,

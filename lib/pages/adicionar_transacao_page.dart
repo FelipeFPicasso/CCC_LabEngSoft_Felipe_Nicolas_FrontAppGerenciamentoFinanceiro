@@ -238,7 +238,7 @@ class _AdicionarTransacaoPageState extends State<AdicionarTransacaoPage> {
               TextFormField(
                 controller: _dataController,
                 decoration: inputDecoration.copyWith(
-                  labelText: 'Data (AAAA-MM-DD)',
+                  labelText: 'Data (DD/MM/AAAA)',
                   suffixIcon: IconButton(
                     icon: Icon(Icons.calendar_today, color: Colors.white70),
                     onPressed: () async {
