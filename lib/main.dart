@@ -35,6 +35,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       title: 'Gerenc Finanças',
+      //debugShowCheckedModeBanner: true,
       initialRoute: '/login',
       routes: {
         '/login': (context) => LoginPage(),
